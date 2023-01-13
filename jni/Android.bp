@@ -1,0 +1,34 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+cc_library_shared {
+    name: "libjni_deviceAsWebcam",
+    stl: "c++_static",
+    shared_libs: [
+        "libandroid",
+        "liblog",
+        "libnativehelper",
+        "libmediandk",
+        "libyuv",
+        "libjpeg",
+    ],
+    static_libs: [
+        "libbase_ndk",
+    ],
+    srcs: [
+        "Buffer.cpp",
+        "Encoder.cpp",
+        "deviceAsWebcamNative.cpp",
+        "DeviceAsWebcamServiceManager.cpp",
+        "UVCProvider.cpp",
+        "SdkFrameProvider.cpp",
+    ],
+    cflags: [
+        "-O3",
+        "-funroll-loops",
+        "-Wextra",
+    ],
+    // for including the jni.h file
+    header_libs: ["jni_headers"],
+}
