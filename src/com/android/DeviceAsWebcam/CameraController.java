@@ -170,7 +170,10 @@ public class CameraController {
                     if ((!mStartCaptureWebcamStream.get()) ||
                             (service.nativeEncodeImage(hardwareBuffer, ts) != 0)) {
                         if (VERBOSE) {
-                            Log.v(TAG, "Couldn't get buffer immediately, returning image");
+                            Log.v(TAG,
+                                    "Couldn't get buffer immediately, returning image images. "
+                                            + "acquired size "
+                                            + mImageMap.size());
                         }
                         hardwareBuffer.close();
                         image.close();
@@ -335,32 +338,29 @@ public class CameraController {
     public void startWebcamStreaming() {
         // Started on a background thread since we don't want to be blocking the service's main
         // thread (we call blocking camera open in these methods internally)
-        mCameraBackgroundHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mStartCaptureWebcamStream.set(true);
-                synchronized (mSerializationLock) {
-                    if (mImgReader == null) {
-                        Log.e(TAG,
-                                "Webcam streaming requested without ImageReader initialized");
+        mCameraBackgroundHandler.post(() -> {
+            mStartCaptureWebcamStream.set(true);
+            synchronized (mSerializationLock) {
+                if (mImgReader == null) {
+                    Log.e(TAG,
+                            "Webcam streaming requested without ImageReader initialized");
+                    return;
+                }
+                switch (mCurrentState) {
+                    case NO_STREAMING:
+                        setupWebcamOnlyStreamAndOpenCameraLocked();
+                        break;
+                    case PREVIEW_STREAMING:
+                        // Its okay to recreate an already running camera session with
+                        // preview since the 'glitch' that we see will not be on the webcam
+                        // stream.
+                        setupWebcamStreamAndReconfigureSessionLocked();
+                        break;
+                    case PREVIEW_AND_WEBCAM_STREAMING:
+                    case WEBCAM_STREAMING:
+                        Log.e(TAG, "Incorrect current state for startWebcamStreaming "
+                                + mCurrentState);
                         return;
-                    }
-                    switch (mCurrentState) {
-                        case NO_STREAMING:
-                            setupWebcamOnlyStreamAndOpenCameraLocked();
-                            break;
-                        case PREVIEW_STREAMING:
-                            // Its okay to recreate an already running camera session with
-                            // preview since the 'glitch' that we see will not be on the webcam
-                            // stream.
-                            setupWebcamStreamAndReconfigureSessionLocked();
-                            break;
-                        case PREVIEW_AND_WEBCAM_STREAMING:
-                        case WEBCAM_STREAMING:
-                            Log.e(TAG, "Incorrect current state for startWebcamStreaming "
-                                    + mCurrentState);
-                            return;
-                    }
                 }
             }
         });

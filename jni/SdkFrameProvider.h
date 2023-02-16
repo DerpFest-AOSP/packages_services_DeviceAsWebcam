@@ -18,9 +18,6 @@
 #include <mutex>
 #include <unordered_map>
 
-#include <android/hardware_buffer.h>
-#include <jni.h>
-
 #include "Encoder.h"
 #include "FrameProvider.h"
 
@@ -32,35 +29,30 @@ class SdkFrameProvider : public FrameProvider,
                          public EncoderCallback,
                          public std::enable_shared_from_this<SdkFrameProvider> {
   public:
-    SdkFrameProvider(jobject weakThiz, std::shared_ptr<BufferProducer> producer,
-                     CameraConfig config);
-    virtual ~SdkFrameProvider();
+    SdkFrameProvider(std::shared_ptr<BufferProducer> producer, CameraConfig config);
+    ~SdkFrameProvider() override;
+
     void setStreamConfig() override;
     Status startStreaming() override;
-    Status stopStreaming() final;
+    Status stopStreaming() final ;
 
-    virtual void onEncoded(Buffer* producerBuffer, HardwareBufferDesc& hardwareBufferDesc,
-                           bool success, JNIEnv* env) override;
+    Status encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp) override;
 
-    Status getHardwareBufferDescFromHardwareBuffer(JNIEnv* env, jobject hardwareBufferObj,
-                                                   HardwareBufferDesc& hardwareBufferDesc);
-
-    // TODO(b/267794640): Move to central JNI method manager
-    static void stopService(jobject mWeakThiz);
-    static jint com_android_DeviceAsWebcam_encodeImage(JNIEnv* env, jclass thiz,
-                                                       jobject hardwareBuffer, jlong timestamp);
-    static int registerJniFunctions(JNIEnv* env, JavaVM* jvm);
+    // EncoderCallback overrides
+    void onEncoded(Buffer* producerBuffer, HardwareBufferDesc& hardwareBufferDesc,
+                           bool success) override;
 
   private:
-    int encodeImage(HardwareBufferDesc desc, jlong timestamp);
-    static const JNINativeMethod sMethods[];
+    Status getHardwareBufferDescFromHardwareBuffer(AHardwareBuffer* hardwareBuffer,
+                                                   HardwareBufferDesc& ret);
+    Status encodeImage(HardwareBufferDesc desc, jlong timestamp);
+    void releaseHardwareBuffer(const HardwareBufferDesc& desc);
 
     std::mutex mMapLock;
     std::unordered_map<uint32_t, AHardwareBuffer*>
             mBufferIdToAHardwareBuffer;  // guarded by mMapLock
     uint32_t mNextBufferId = 0;          // guarded by mMapLock
     std::shared_ptr<Encoder> mEncoder;
-    jobject mWeakThiz;
 };
 
 }  // namespace webcam
