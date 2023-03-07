@@ -131,8 +131,15 @@ uint32_t Encoder::i420ToJpeg(EncodeRequest& request) {
     // Set up error management
     jpegErrorInfo = nullptr;
     jpeg_error_mgr jErr;
+    auto jpegCompressDeleter =
+          [] (jpeg_compress_struct *c) {
+              jpeg_destroy_compress(c);
+              delete c;
+          };
 
-    auto cInfo = std::make_unique<jpeg_compress_struct>();
+    std::unique_ptr<jpeg_compress_struct, decltype(jpegCompressDeleter)> cInfo(
+            new jpeg_compress_struct(), jpegCompressDeleter);
+
     cInfo->err = jpeg_std_error(&jErr);
     cInfo->err->error_exit = [](j_common_ptr cInfo) {
         (*cInfo->err->output_message)(cInfo);
