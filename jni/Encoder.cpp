@@ -15,28 +15,23 @@
  */
 
 //#define LOG_NDEBUG 0
-#include <condition_variable>
-#include <mutex>
-#include <queue>
 
-#include <jni.h>
+#include "Encoder.h"
+
+#include <DeviceAsWebcamNative.h>
+#include <condition_variable>
 #include <libyuv/convert.h>
 #include <libyuv/convert_from.h>
-
 #include <log/log.h>
-#include "Encoder.h"
-#include "Utils.h"
-
-#include <pthread.h>
+#include <queue>
 #include <sched.h>
 
 namespace android {
 namespace webcam {
 
-Encoder::Encoder(CameraConfig& config, EncoderCallback* cb, JavaVM* jvm)
-    : mConfig(config), mCb(cb), mJVM(jvm) {
+Encoder::Encoder(CameraConfig& config, EncoderCallback* cb)
+    : mConfig(config), mCb(cb){
     // Inititalize intermediate buffers here.
-
     mI420.y = std::make_unique<uint8_t[]>(config.width * config.height);
 
     // TODO:(b/267794640): Can the size be width * height / 4 as it is subsampled by height
@@ -56,7 +51,7 @@ Encoder::Encoder(CameraConfig& config, EncoderCallback* cb, JavaVM* jvm)
     mInited = true;
 }
 
-bool Encoder::isInited() {
+bool Encoder::isInited() const {
     return mInited;
 }
 
@@ -70,14 +65,13 @@ Encoder::~Encoder() {
 void Encoder::encodeThreadLoop() {
     using namespace std::chrono_literals;
     ALOGV("%s Starting encode threadLoop", __FUNCTION__);
-    ScopedAttach attach(mJVM, &mEncoderThreadEnv);
     EncodeRequest request;
-    while (mContinueEncoding.load()) {
+    while (mContinueEncoding) {
         {
             std::unique_lock<std::mutex> l(mRequestLock);
             while (mRequestQueue.empty()) {
-                mRequestCondition.wait_for(l, 50ms, [&] { return !mRequestQueue.empty(); });
-                if (!mContinueEncoding.load()) {
+                mRequestCondition.wait_for(l, 50ms);
+                if (!mContinueEncoding) {
                     return;
                 }
             }
@@ -87,15 +81,14 @@ void Encoder::encodeThreadLoop() {
         encode(request);
     }
 
+    // Thread signalled to exit.
+    ALOGV("%s Encode thread now exiting", __FUNCTION__);
     std::unique_lock<std::mutex> l(mRequestLock);
     // Return any pending buffers with encode failure callbacks.
-    ALOGV("%s Encode thread now exiting", __FUNCTION__);
     while (!mRequestQueue.empty()) {
         request = mRequestQueue.front();
         mRequestQueue.pop();
-        l.unlock();
-        mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ false, mEncoderThreadEnv);
-        l.lock();
+        mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ false);
     }
 }
 
@@ -275,7 +268,7 @@ void Encoder::encodeToMJpeg(EncodeRequest& request) {
     // TODO(b/267794640) : Can we skip this conversion and encode to jpeg straight ?
     if (convertToI420(request) != 0) {
         ALOGE("%s: Encode from YUV_420 to I420 failed", __FUNCTION__);
-        mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ false, mEncoderThreadEnv);
+        mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ false);
         return;
     }
 
@@ -283,12 +276,12 @@ void Encoder::encodeToMJpeg(EncodeRequest& request) {
     uint32_t encodedSize = i420ToJpeg(request);
     if (encodedSize == 0) {
         ALOGE("%s: Encode from I420 to JPEG failed", __FUNCTION__);
-        mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ false, mEncoderThreadEnv);
+        mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ false);
         return;
     }
     request.dstBuffer->setBytesUsed(encodedSize);
 
-    mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ true, mEncoderThreadEnv);
+    mCb->onEncoded(request.dstBuffer, request.srcBuffer, /*success*/ true);
 }
 
 int Encoder::convertToI420(EncodeRequest& request) {
@@ -311,7 +304,7 @@ void Encoder::encodeToYUYV(EncodeRequest& r) {
     // First convert from Android YUV format to I420.
     if (convertToI420(r) != 0) {
         ALOGE("%s: Encode from YUV_420 to I420 failed", __FUNCTION__);
-        mCb->onEncoded(r.dstBuffer, r.srcBuffer, /*success*/ false, mEncoderThreadEnv);
+        mCb->onEncoded(r.dstBuffer, r.srcBuffer, /*success*/ false);
         return;
     }
 
@@ -327,12 +320,12 @@ void Encoder::encodeToYUYV(EncodeRequest& r) {
                            reinterpret_cast<uint8_t*>(dstBuffer->getMem()),
                            /*rowStride*/ mConfig.width * 2, mConfig.width, mConfig.height) != 0) {
         ALOGE("%s: Encode from I420 to YUYV failed", __FUNCTION__);
-        mCb->onEncoded(r.dstBuffer, r.srcBuffer, /*success*/ false, mEncoderThreadEnv);
+        mCb->onEncoded(r.dstBuffer, r.srcBuffer, /*success*/ false);
         return;
     }
     dstBuffer->setBytesUsed(mConfig.width * mConfig.height * 2);
     // Call the callback
-    mCb->onEncoded(r.dstBuffer, r.srcBuffer, /*success*/ true, mEncoderThreadEnv);
+    mCb->onEncoded(r.dstBuffer, r.srcBuffer, /*success*/ true);
 }
 
 void Encoder::encode(EncodeRequest& encodeRequest) {
@@ -350,7 +343,9 @@ void Encoder::encode(EncodeRequest& encodeRequest) {
 }
 
 void Encoder::startEncoderThread() {
-    mEncoderThread = std::thread(&Encoder::encodeThreadLoop, this);
+    // mEncoderThread can call into java as a part of EncoderCallback
+    mEncoderThread =
+            DeviceAsWebcamNative::createJniAttachedThread(&Encoder::encodeThreadLoop, this);
     ALOGV("Started new Encoder Thread");
 }
 
