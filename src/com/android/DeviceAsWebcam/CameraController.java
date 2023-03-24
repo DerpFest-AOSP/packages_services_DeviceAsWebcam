@@ -38,9 +38,9 @@ import androidx.annotation.NonNull;
 
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class controls the operation of the camera - primarily through the public calls
@@ -86,9 +86,8 @@ public class CameraController {
     private ConditionVariable mCaptureSessionReady = new ConditionVariable();
     private AtomicBoolean mStartCaptureWebcamStream = new AtomicBoolean(false);
     private final Object mSerializationLock = new Object();
-    private final Object mImageMapLock = new Object();
     // timestamp -> Image
-    private HashMap<Long, ImageAndBuffer> mImageMap = new HashMap<Long, ImageAndBuffer>();
+    private ConcurrentHashMap<Long, ImageAndBuffer> mImageMap = new ConcurrentHashMap<>();
     private int mFps;
     // TODO(b/267794640): UI to select camera id
     private String mCameraId = "0"; // Default camera id.
@@ -145,11 +144,9 @@ public class CameraController {
                         Log.e(TAG, "Service is dead, what ?");
                         return;
                     }
-                    synchronized (mImageMapLock) {
-                        if (mImageMap.size() >= MAX_BUFFERS) {
+                    if (mImageMap.size() >= MAX_BUFFERS) {
                             Log.w(TAG, "Too many buffers acquired in onImageAvailable, returning");
                             return;
-                        }
                     }
                     // Get native HardwareBuffer from the latest image and send it to
                     // the native layer for the encoder to process.
@@ -166,18 +163,15 @@ public class CameraController {
                     }
                     long ts = image.getTimestamp();
                     HardwareBuffer hardwareBuffer = image.getHardwareBuffer();
+                    mImageMap.put(ts, new ImageAndBuffer(image, hardwareBuffer));
                     // Callback into DeviceAsWebcamFgService to encode image
                     if ((!mStartCaptureWebcamStream.get()) ||
                             (service.nativeEncodeImage(hardwareBuffer, ts) != 0)) {
                         if (VERBOSE) {
                             Log.v(TAG, "Couldn't get buffer immediately, returning image");
                         }
-                        hardwareBuffer.close();
-                        image.close();
+                        returnImage(ts);
                         return;
-                    }
-                    synchronized (mImageMapLock) {
-                        mImageMap.put(ts, new ImageAndBuffer(image, hardwareBuffer));
                     }
                 }
             };
@@ -478,19 +472,16 @@ public class CameraController {
     }
 
     public void returnImage(long timestamp) {
-        synchronized (mImageMapLock) {
-            ImageAndBuffer imageAndBuffer = mImageMap.get(timestamp);
-            if (imageAndBuffer == null) {
-                Log.e(TAG, "Image with timestamp " + timestamp +
-                        " was never encoded / already returned");
-                return;
-            }
-            mImageMap.remove(timestamp);
-            imageAndBuffer.buffer.close();
-            imageAndBuffer.image.close();
-            if (VERBOSE) {
-                Log.v(TAG, "Returned image " + timestamp);
-            }
+        ImageAndBuffer imageAndBuffer = mImageMap.remove(timestamp);
+        if (imageAndBuffer == null) {
+            Log.e(TAG, "Image with timestamp " + timestamp +
+                    " was never encoded / already returned");
+            return;
+        }
+        imageAndBuffer.buffer.close();
+        imageAndBuffer.image.close();
+        if (VERBOSE) {
+            Log.v(TAG, "Returned image " + timestamp);
         }
     }
 
