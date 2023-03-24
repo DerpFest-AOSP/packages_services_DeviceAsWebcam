@@ -18,16 +18,14 @@
  *  Manage the producer and consumer buffers needed by FrameProviders.
  */
 #pragma once
-#include <jni.h>
+
+#include <Utils.h>
 #include <linux/videodev2.h>
+#include <condition_variable>
 #include <map>
+#include <mutex>
 #include <queue>
 #include <vector>
-
-#include <condition_variable>
-#include <mutex>
-
-#include "Utils.h"
 
 namespace android {
 namespace webcam {
@@ -38,18 +36,18 @@ enum BufferType {
 
 struct HardwareBufferDesc {
     uint8_t* yData = nullptr;
-    int yDataLength = 0;
-    int32_t yRowStride = 0;
+    uint32_t yDataLength = 0;
+    uint32_t yRowStride = 0;
 
     uint8_t* uData = nullptr;
-    int uDataLength = 0;
-    int32_t uRowStride = 0;
+    uint32_t uDataLength = 0;
+    uint32_t uRowStride = 0;
 
     uint8_t* vData = nullptr;
-    int vDataLength = 0;
-    int32_t vRowStride = 0;
+    uint32_t vDataLength = 0;
+    uint32_t vRowStride = 0;
 
-    int32_t uvPixelStride = 0;
+    uint32_t uvPixelStride = 0;
     uint32_t bufferId = 0;
 };
 
@@ -65,52 +63,58 @@ class BufferManager;
 //                    check that there are no Buffers alive before freeing the handed out buffers.
 //                    This will also ensure that the lifetime of BufferManager >= lifetime of
 //                    Buffer.
-struct Buffer {
+class Buffer {
+  public:
+    Buffer() = default;
     virtual BufferType getBufferType() = 0;
-    virtual void* getMem() const = 0;
-    virtual size_t getLength() const = 0;
+    [[nodiscard]] virtual void* getMem() = 0;
+    [[nodiscard]] virtual size_t getLength() const = 0;
     virtual void setBytesUsed(uint32_t bytesUsed) = 0;
-    virtual ~Buffer(){};
+    virtual ~Buffer() = default;
 
     void setTimestamp(uint64_t ts) { mTimestamp = ts; }
 
-    uint64_t getTimestamp() { return mTimestamp; }
+    [[nodiscard]] uint64_t getTimestamp() const { return mTimestamp; }
+    [[nodiscard]] virtual uint32_t getIndex() const = 0;
 
     friend class BufferManager;
 
   private:
-    virtual uint32_t getIndex() const = 0;
     uint64_t mTimestamp = 0;
 };
 
-struct V4L2Buffer : public Buffer {
-    V4L2Buffer(void* mem, const struct v4l2_buffer* buffer) : mMem(mem) { mBuffer = *buffer; }
+class V4L2Buffer : public Buffer {
+  public:
+    V4L2Buffer(void* mem, const struct v4l2_buffer* buffer) : mMem(mem), mBuffer(*buffer) {}
     V4L2Buffer() { memset(&mBuffer, 0, sizeof(mBuffer)); }
-    virtual ~V4L2Buffer(){};
+    ~V4L2Buffer() override = default;
+
     BufferType getBufferType() override { return BufferType::V4L2; }
 
     // Memory will be freed by BufferManager. Do not free.
-    virtual void* getMem() const { return mMem; }
+    [[nodiscard]] void* getMem() override { return mMem; }
 
-    virtual size_t getLength() const override { return mBuffer.length; }
+    [[nodiscard]] size_t getLength() const override { return mBuffer.length; }
 
-    virtual void setBytesUsed(uint32_t bytesUsed) { mBuffer.bytesused = bytesUsed; }
+    void setBytesUsed(uint32_t bytesUsed) override { mBuffer.bytesused = bytesUsed; }
 
     struct v4l2_buffer* getV4L2Buffer() {
         return &mBuffer;
     }
-    virtual uint32_t getIndex() const { return mBuffer.index; }
+
+    [[nodiscard]] uint32_t getIndex() const override { return mBuffer.index; }
 
   private:
     void* mMem = nullptr;
-    struct v4l2_buffer mBuffer;
+    struct v4l2_buffer mBuffer {};
 };
 
 class BufferProducer {
   public:
-    // returns a free buffer if its available. This method does not wait for a free buffer.
-    // Buffer is owned by BufferProducer. Caller should not manage the lifetime of the object and
-    // should ensure that all buffer references are dropped when BufferProducer goes out of scope.
+    // Returns a free buffer if it is available. This method does not wait for a free
+    // buffer. Buffer is owned by BufferProducer. Caller should not manage the lifetime of the
+    // object and should ensure that all buffer references are dropped when BufferProducer goes out
+    // of scope.
     virtual Buffer* getFreeBufferIfAvailable() = 0;
 
     // Queues a filled buffer to the BufferManager.
@@ -118,7 +122,7 @@ class BufferProducer {
 
     // Cancels a queued Buffer
     virtual Status cancelBuffer(Buffer* buffer) = 0;
-    virtual ~BufferProducer() {}
+    virtual ~BufferProducer() = default;
 };
 
 class BufferConsumer {
@@ -127,12 +131,12 @@ class BufferConsumer {
     // consumer side buffer for the BufferManager to give away to the producer to use.
     // Buffer is owned by BufferConsumer. Caller should not manage the lifetime of the object.
     virtual Buffer* getFilledBufferAndSwap() = 0;
-    virtual ~BufferConsumer() {}
+    virtual ~BufferConsumer() = default;
 };
 
 class BufferCreatorAndDestroyer {
   public:
-    virtual ~BufferCreatorAndDestroyer() {}
+    virtual ~BufferCreatorAndDestroyer() = default;
     virtual Status allocateAndMapBuffers(std::shared_ptr<Buffer>* consumerBuffer,
                                          std::vector<std::shared_ptr<Buffer>>* producerBuffer) = 0;
     virtual void destroyBuffers(std::shared_ptr<Buffer>& consumerBuffer,
@@ -151,13 +155,13 @@ class BufferManager : public BufferConsumer, public BufferProducer {
     // TODO(b/267794640): Look into better memory management
     // BufferCreatorAndDestroyer is owned by the caller, it must be active throughout the lifetime
     // of BufferManager
-    BufferManager(BufferCreatorAndDestroyer* crD);
-    virtual ~BufferManager();
-    bool isInited() { return mInited; }
-    virtual Buffer* getFreeBufferIfAvailable() override;
-    virtual Status queueFilledBuffer(Buffer* buffer) override;
-    virtual Status cancelBuffer(Buffer* buffer) override;
-    virtual Buffer* getFilledBufferAndSwap() override;
+    explicit BufferManager(BufferCreatorAndDestroyer* crD);
+    ~BufferManager() override;
+    [[nodiscard]] bool isInited() const { return mInited; }
+    Buffer* getFreeBufferIfAvailable() override;
+    Status queueFilledBuffer(Buffer* buffer) override;
+    Status cancelBuffer(Buffer* buffer) override;
+    Buffer* getFilledBufferAndSwap() override;
 
   private:
     enum BufferState {
@@ -181,16 +185,16 @@ class BufferManager : public BufferConsumer, public BufferProducer {
     bool mInited = false;
     BufferCreatorAndDestroyer* mCrD = nullptr;
 
-    std::mutex mBufferLock; // guards all operations relating to Buffer and BufferItems
-    std::condition_variable mProducerBufferFilled; // guarded by mBufferLock
-    BufferItem mConsumerBufferItem; // guarded by mBufferLock
+    std::mutex mBufferLock;  // guards all operations relating to Buffer and BufferItems
+    std::condition_variable mProducerBufferFilled;  // guarded by mBufferLock
+    BufferItem mConsumerBufferItem;                 // guarded by mBufferLock
     // Using a simple vector here as we don't expect to have more than 3-4 buffers in circulation
     // We have multiple producer buffers so that skews between other producers being used by the
     // producer side - eg: buffer from camera doesn't get blocked from getting encoded while
     // consumer is still consuming the consumer side buffer (this could happen if we had only 1
     // producer buffer and 1 consumer buffer and there's a skew between camera frame production and
     // consumer (UVC gadget driver etc) frame consumption.
-    std::vector<BufferItem> mProducerBufferItems; // guarded by mBufferLock
+    std::vector<BufferItem> mProducerBufferItems;  // guarded by mBufferLock
 };
 
 }  // namespace webcam

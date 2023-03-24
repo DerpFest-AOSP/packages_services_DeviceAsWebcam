@@ -31,8 +31,6 @@ public class DeviceAsWebcamReceiver extends BroadcastReceiver {
         System.loadLibrary("jni_deviceAsWebcam");
     }
 
-    public static native boolean shouldStartServiceNative();
-
     @Override
     public void onReceive(Context context, Intent intent) {
         final String action = intent.getAction();
@@ -47,7 +45,7 @@ public class DeviceAsWebcamReceiver extends BroadcastReceiver {
             return;
         }
         if (UsbManager.ACTION_USB_STATE.equals(action) && uvcSelected) {
-            if (!shouldStartServiceNative()) {
+            if (!DeviceAsWebcamFgService.shouldStartServiceNative()) {
                 if (VERBOSE) {
                     Log.v(TAG, "Shouldn't start service so returning");
                 }
