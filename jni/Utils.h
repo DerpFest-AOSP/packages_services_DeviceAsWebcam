@@ -18,24 +18,12 @@
  *  Manage the remote camera service native functions.
  */
 #pragma once
-#include <jni.h>
-
 namespace android {
 namespace webcam {
 
 enum Status {
     OK = 0,
     ERROR = 1,
-};
-
-class ScopedAttach {
-  public:
-    ScopedAttach(JavaVM* vm, JNIEnv** env) : vm_(vm) { vm_->AttachCurrentThread(env, NULL); }
-
-    ~ScopedAttach() { vm_->DetachCurrentThread(); }
-
-  private:
-    JavaVM* vm_;
 };
 
 }  // namespace webcam
