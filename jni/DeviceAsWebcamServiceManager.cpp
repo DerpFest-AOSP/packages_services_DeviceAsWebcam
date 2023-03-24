@@ -14,107 +14,135 @@
  * limitations under the License.
  */
 
-/*
- *  Manage the listen-mode routing table.
- */
-
 #include "DeviceAsWebcamServiceManager.h"
+#include <DeviceAsWebcamNative.h>
+#include <UVCProvider.h>
+#include <android/hardware_buffer_jni.h>
 #include <log/log.h>
-
-#include "UVCProvider.h"
-
-#include <nativehelper/JNIHelp.h>
-#include <nativehelper/ScopedLocalRef.h>
-
-constexpr uint32_t kMaxDevicePathLen = 256;
-constexpr char kDevicePath[] = "/dev/";
-constexpr char kPrefix[] = "video";
 
 namespace android {
 namespace webcam {
 
-static JavaVM* gJVM = nullptr;
+DeviceAsWebcamServiceManager* DeviceAsWebcamServiceManager::kInstance =
+        new DeviceAsWebcamServiceManager();
 
-const JNINativeMethod DeviceAsWebcamServiceManager::sMethods[] = {
-        {"setupServicesAndStartListeningNative", "(Ljava/lang/Object;)I",
-         (void*)DeviceAsWebcamServiceManager::
-                 com_android_DeviceAsWebcam_setupServicesAndStartListening},
-        {"stopServiceNative", "()V",
-         (void*)DeviceAsWebcamServiceManager::com_android_DeviceAsWebcam_stopService},
-};
-
-const JNINativeMethod DeviceAsWebcamServiceManager::sReceiverMethods[] = {
-        {"shouldStartServiceNative", "()Z",
-         (void*)DeviceAsWebcamServiceManager::com_android_DeviceAsWebcam_shouldStartService},
-};
-
-int DeviceAsWebcamServiceManager::registerJniFunctions(JNIEnv* e, JavaVM* jvm) {
-    static const char fn[] = "DeviceAsWebcamServiceManager::registerJniFunctions";
-    gJVM = jvm;
-
-    int res = jniRegisterNativeMethods(e, "com/android/DeviceAsWebcam/DeviceAsWebcamFgService",
-                                       sMethods, NELEM(sMethods));
-    if (res != 0) {
-        return res;
-    }
-    return jniRegisterNativeMethods(e, "com/android/DeviceAsWebcam/DeviceAsWebcamReceiver",
-                                    sReceiverMethods, NELEM(sReceiverMethods));
-}
-
-jint DeviceAsWebcamServiceManager::com_android_DeviceAsWebcam_setupServicesAndStartListening(
-        JNIEnv* env, jclass, jobject weakThiz) {
-    return getInstance()->setupServicesAndStartListening(env, weakThiz);
-}
-
-void DeviceAsWebcamServiceManager::com_android_DeviceAsWebcam_stopService(JNIEnv*, jclass) {
-    getInstance()->stopService();
-}
-
-jboolean DeviceAsWebcamServiceManager::shouldStartService() {
-    if (mServiceRunning.load()) {
-        ALOGW("Service already running, so we're not starting it again");
+bool DeviceAsWebcamServiceManager::shouldStartService() {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (mServiceRunning) {
+        ALOGW("Service already running, don't start it again.");
         return false;
     }
 
     return (UVCProvider::getVideoNode().length() != 0);
 }
 
-void DeviceAsWebcamServiceManager::recordServiceStopped() {
-    mServiceRunning.store(false);
-}
-
-void DeviceAsWebcamServiceManager::stopService() {
-    std::lock_guard<std::mutex> l(mSerializationLock);
-    mUVCProvider = nullptr;
-}
-
-jboolean DeviceAsWebcamServiceManager::com_android_DeviceAsWebcam_shouldStartService(JNIEnv*,
-                                                                                     jclass) {
-    return getInstance()->shouldStartService();
-}
-
-int DeviceAsWebcamServiceManager::setupServicesAndStartListening(JNIEnv* env, jobject weakThiz) {
-    ALOGV("%s ", __FUNCTION__);
+int DeviceAsWebcamServiceManager::setupServicesAndStartListening(JNIEnv* env, jobject javaService) {
+    ALOGV("%s", __FUNCTION__);
     std::lock_guard<std::mutex> l(mSerializationLock);
     if (mUVCProvider == nullptr) {
-        mUVCProvider = std::make_shared<UVCProvider>(env, gJVM, weakThiz, this);
+        mUVCProvider = std::make_shared<UVCProvider>();
     }
     // Set up UVC stack
     if ((mUVCProvider->init() != Status::OK) || (mUVCProvider->startService() != Status::OK)) {
         ALOGE("%s: Unable to init/ start service", __FUNCTION__);
         return -1;
     }
+    mJavaService = env->NewGlobalRef(javaService);
     mServiceRunning = true;
     return 0;
 }
 
-DeviceAsWebcamServiceManager::DeviceAsWebcamServiceManager() {}
+int DeviceAsWebcamServiceManager::encodeImage(JNIEnv* env, jobject hardwareBuffer,
+                                              jlong timestamp) {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (!mServiceRunning) {
+        ALOGE("%s called, but native service is not running. Ignoring call.", __FUNCTION__);
+        return -1;
+    }
+    AHardwareBuffer* buffer = AHardwareBuffer_fromHardwareBuffer(env, hardwareBuffer);
+    return mUVCProvider->encodeImage(buffer, timestamp);
+}
 
-DeviceAsWebcamServiceManager::~DeviceAsWebcamServiceManager() {}
+void DeviceAsWebcamServiceManager::setStreamConfig(bool mjpeg, uint32_t width, uint32_t height,
+                                                   uint32_t fps) {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (!mServiceRunning) {
+        ALOGE("%s called but java foreground service is not running. No-op-ing out", __FUNCTION__);
+        return;
+    }
+    DeviceAsWebcamNative::setStreamConfig(mJavaService, mjpeg, width, height, fps);
+}
 
-DeviceAsWebcamServiceManager* DeviceAsWebcamServiceManager::getInstance() {
-    static DeviceAsWebcamServiceManager* dm = new DeviceAsWebcamServiceManager();
-    return dm;
+void DeviceAsWebcamServiceManager::startStreaming() {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (!mServiceRunning) {
+        ALOGE("%s called but java foreground service is not running. No-op-ing out", __FUNCTION__);
+        return;
+    }
+    DeviceAsWebcamNative::startStreaming(mJavaService);
+}
+
+void DeviceAsWebcamServiceManager::stopStreaming() {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (!mServiceRunning) {
+        ALOGE("%s called but java foreground service is not running. No-op-ing out", __FUNCTION__);
+        return;
+    }
+    DeviceAsWebcamNative::stopStreaming(mJavaService);
+}
+
+void DeviceAsWebcamServiceManager::returnImage(long timestamp) {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (!mServiceRunning) {
+        ALOGE("%s called but java foreground service is not running. No-op-ing out", __FUNCTION__);
+        return;
+    }
+    DeviceAsWebcamNative::returnImage(mJavaService, timestamp);
+}
+
+void DeviceAsWebcamServiceManager::stopService() {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (!mServiceRunning) {
+        ALOGE("%s called but java foreground service is not running. No-op-ing out", __FUNCTION__);
+        return;
+    }
+    // Wait for previous stopService java call to finish (note that this should almost
+    // never actually block unless something goes really wrong).
+    if (mJniThread.joinable()) {
+        mJniThread.join();
+    }
+
+    // Send off the event on a background thread. This prevents the caller thread being stuck on
+    // Java logic.
+    mJniThread = DeviceAsWebcamNative::createJniAttachedThread(&DeviceAsWebcamNative::stopService,
+                                                               mJavaService);
+    // Don't reset any state as the Java service's onDestroy callback will handle that for us.
+}
+
+// Called by the Java Foreground service when it is being destroyed. The UVCProvider may or may not
+// be running at this point.
+void DeviceAsWebcamServiceManager::onDestroy() {
+    ALOGV("%s", __FUNCTION__);
+    std::lock_guard<std::mutex> l(mSerializationLock);
+    if (!mServiceRunning) {
+        ALOGE("%s called after Java Service was already considered destroyed. No-op-ing out.",
+              __FUNCTION__);
+        return;
+    }
+
+    JNIEnv* env = DeviceAsWebcamNative::getJNIEnvOrAbort();
+    // reset all non-static state
+    mUVCProvider = nullptr;
+    env->DeleteGlobalRef(mJavaService);  // let Java Service be GC'ed by the JVM
+    mJavaService = nullptr;
+    mServiceRunning = false;
 }
 
 }  // namespace webcam

@@ -19,13 +19,8 @@
  */
 #pragma once
 #include <jni.h>
-
-#include <atomic>
 #include <mutex>
-
-#include <android-base/unique_fd.h>
-#include <linux/usb/g_uvc.h>
-#include <linux/usb/video.h>
+#include <thread>
 
 namespace android {
 namespace webcam {
@@ -33,27 +28,43 @@ namespace webcam {
 class UVCProvider;
 class DeviceAsWebcamServiceManager {
   public:
-    static DeviceAsWebcamServiceManager* getInstance();
-    int registerJniFunctions(JNIEnv* e, JavaVM* jvm);
-    void recordServiceStopped();
-    ~DeviceAsWebcamServiceManager();
+    // Singleton instance. All member functions/fields should be accessed through this instance.
+    // It lives indefinitely. Ctor and Dtor should not be relied on for cleanup of resources.
+    static DeviceAsWebcamServiceManager* kInstance;
+
+    // Returns true if the java service needs to be started. This is called by the USB Broadcast
+    // receiver which might multiple receive spurious calls to start the service.
+    bool shouldStartService();
+    // Inits the native side of the service. This function should be called by the Java service
+    // before any of the functions below it
+    int setupServicesAndStartListening(JNIEnv* env, jobject javaService);
+    // Called by Java to encode a frame
+    int encodeImage(JNIEnv* env, jobject hardwareBuffer, jlong timestamp);
+    // Called by native service to set the stream configuration in the Java Service.
+    void setStreamConfig(bool mjpeg, uint32_t width, uint32_t height, uint32_t fps);
+    // Called by native service to notify the Java service to start streaming the camera.
+    void startStreaming();
+    // Called by native service to notify the Java service to stop streaming the camera.
+    void stopStreaming();
+    // Called by native service to return an Image to the Java service.
+    void returnImage(long timestamp);
+    // Called by the Native Service when it wants to signal the Java service to stop.
+    // This is non-blocking and does not guarantee that the Java service has stopped on return.
+    void stopService();
+    // Called by Java when the foreground service is being destroyed.
+    void onDestroy();
+
+    ~DeviceAsWebcamServiceManager() = default;
 
   private:
-    DeviceAsWebcamServiceManager();
-    static jint com_android_DeviceAsWebcam_setupServicesAndStartListening(JNIEnv* env, jclass clazz,
-                                                                          jobject weakThiz);
-    static jboolean com_android_DeviceAsWebcam_shouldStartService(JNIEnv*, jclass);
-    static void com_android_DeviceAsWebcam_stopService(JNIEnv*, jclass);
-    static const JNINativeMethod sMethods[];
-    static const JNINativeMethod sReceiverMethods[];
+    DeviceAsWebcamServiceManager() = default;
 
-    int setupServicesAndStartListening(JNIEnv* env, jobject weakThiz);
-    jboolean shouldStartService();
-    void stopService();
-
-    std::mutex mSerializationLock; //serializes service start and stop methods
+    std::mutex mSerializationLock;   // Serializes all methods in class
+    bool mServiceRunning = false;    // if this is true, then the variables underneath can be
+                                     // considered safe to use without further checking.
+    jobject mJavaService = nullptr;  // strong reference to the current foreground service.
     std::shared_ptr<UVCProvider> mUVCProvider;
-    std::atomic<bool> mServiceRunning = false;
+    std::thread mJniThread;  // thread to make asynchronous calls to Java
 };
 
 }  // namespace webcam

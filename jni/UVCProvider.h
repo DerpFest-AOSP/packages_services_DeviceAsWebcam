@@ -15,27 +15,25 @@
  */
 
 #pragma once
-#include <android-base/unique_fd.h>
 
-#include <jni.h>
+#include <Buffer.h>
+#include <DeviceAsWebcamServiceManager.h>
+#include <FrameProvider.h>
+#include <Utils.h>
+#include <android-base/unique_fd.h>
+#include <android/hardware_buffer.h>
+#include <linux/usb/g_uvc.h>
+#include <linux/usb/video.h>
 #include <atomic>
 #include <thread>
 #include <vector>
 
-#include <linux/usb/g_uvc.h>
-#include <linux/usb/video.h>
-
-#include "Buffer.h"
-#include "DeviceAsWebcamServiceManager.h"
-#include "FrameProvider.h"
-#include "Utils.h"
-
-using android::base::unique_fd;
+namespace android {
+namespace webcam {
 
 typedef std::vector<struct epoll_event> Events;
 
-namespace android {
-namespace webcam {
+using android::base::unique_fd;
 
 class EpollW {
   public:
@@ -43,7 +41,7 @@ class EpollW {
     Status add(int fd, uint32_t events);
     Status modify(int fd, uint32_t events);
     Status remove(int fd);
-    Events wait();
+    Events waitForEvents();
 
   private:
     unique_fd mEpollFd;
@@ -90,22 +88,27 @@ struct FormatTriplet {
     uint8_t formatIndex = 1;
     uint8_t frameSizeIndex = 1;
     uint32_t frameInterval = 0;
-    FormatTriplet(uint8_t fmtIndex, uint8_t frSzIndex, uint32_t frInterval)
-        : formatIndex(fmtIndex), frameSizeIndex(frSzIndex), frameInterval(frInterval) {}
+    FormatTriplet(uint8_t formatIndex, uint8_t frameSizeIndex, uint32_t frameInterval)
+        : formatIndex(formatIndex), frameSizeIndex(frameSizeIndex), frameInterval(frameInterval) {}
 };
 
 // This class manages all things related to UVC event handling.
 class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
   public:
-    UVCProvider(JNIEnv* env, JavaVM* jvm, jobject weakThiz,
-                DeviceAsWebcamServiceManager* mgr);
+    static std::string getVideoNode();
+
+    UVCProvider() = default;
     ~UVCProvider();
+
     Status init();
     // Start listening for UVC events
     Status startService();
+
     void stopService();
+
+    int encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp);
+
     void watchStreamEvent();
-    static std::string getVideoNode();
 
   private:
     // Created after a UVC_SETUP event has been received and processed by UVCProvider
@@ -113,10 +116,10 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
     // for probing and committing controls.
     class UVCDevice : public BufferCreatorAndDestroyer {
       public:
-        UVCDevice(jobject weakThiz, std::weak_ptr<UVCProvider> parent);
-        virtual ~UVCDevice(){};
+        explicit UVCDevice(std::weak_ptr<UVCProvider> parent);
+        ~UVCDevice() override = default;
         void closeUVCFd();
-        bool isInited();
+        [[nodiscard]] bool isInited() const;
         int getUVCFd() { return mUVCFd.get(); }
         void processSetupEvent(const struct usb_ctrlrequest* request,
                                struct uvc_request_data* response);
@@ -131,17 +134,19 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
         void processStreamOnEvent();
         void processStreamOffEvent();
         void processStreamEvent();
+        Status encodeImage(AHardwareBuffer* buffer, long timestamp);
 
-        // BufferCreatorAndDestroyer interface
-        virtual Status allocateAndMapBuffers(
+        // BufferCreatorAndDestroyer overrides
+        Status allocateAndMapBuffers(
                 std::shared_ptr<Buffer>* consumerBuffer,
                 std::vector<std::shared_ptr<Buffer>>* producerBuffers) override;
-        virtual void destroyBuffers(std::shared_ptr<Buffer>& consumerBuffer,
-                                    std::vector<std::shared_ptr<Buffer>>& producerBuffers) override;
+        void destroyBuffers(std::shared_ptr<Buffer>& consumerBuffer,
+                            std::vector<std::shared_ptr<Buffer>>& producerBuffers) override;
 
       private:
-        std::shared_ptr<UVCProperties> ParseUVCProperties();
+        std::shared_ptr<UVCProperties> parseUvcProperties();
         std::vector<ConfigFormat> getFormats();
+
         void getFrameIntervals(ConfigFrame* frame, ConfigFormat* format);
         void getFormatFrames(ConfigFormat* format);
 
@@ -151,12 +156,12 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
         void commitControls();
 
         std::shared_ptr<Buffer> mapBuffer(uint32_t i);
-        Status unmapBuffer(std::shared_ptr<Buffer>& buffer);
+        static Status unmapBuffer(std::shared_ptr<Buffer>& buffer);
 
         Status getFrameAndQueueBufferToGadgetDriver(bool firstBuffer = false);
 
-        struct uvc_streaming_control mProbe;
-        struct uvc_streaming_control mCommit;
+        struct uvc_streaming_control mProbe {};
+        struct uvc_streaming_control mCommit {};
         uint8_t mCurrentControlState = UVC_VS_CONTROL_UNDEFINED;
         std::weak_ptr<UVCProvider> mParent;
         std::shared_ptr<UVCProperties> mUVCProperties;
@@ -165,10 +170,9 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
         unique_fd mUVCFd;
         // Path to /dev/video*, this is the node we open up and poll the fd for uvc / v4l2 events.
         std::string mVideoNode;
-        struct v4l2_format mV4l2Format;
+        struct v4l2_format mV4l2Format {};
         uint32_t mFps = 0;
         bool mInited = false;
-        jobject mWeakThiz;
     };
 
     void stopAndWaitForUVCListenerThread();
@@ -178,11 +182,8 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
     void processUVCEvent();
 
     std::shared_ptr<UVCDevice> mUVCDevice;
-    JavaVM* mJVM = nullptr;
-    jobject mWeakThiz;
-    DeviceAsWebcamServiceManager* mDawMgr; // This will always outlive UVCProvider
     std::thread mUVCListenerThread;
-    std::atomic<bool> mListenToUVCFds = true;
+    volatile bool mListenToUVCFds = true;
     EpollW mEpollW;
 };
 
