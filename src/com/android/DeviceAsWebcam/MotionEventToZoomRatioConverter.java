@@ -31,7 +31,7 @@ import android.view.ScaleGestureDetector;
  * Callers can use the updated zoom ratio to submit capture request for the zoom function.
  */
 public class MotionEventToZoomRatioConverter {
-    private final Range<Float> mZoomRatioRange;
+    private Range<Float> mZoomRatioRange;
     private float mCurrentZoomRatio = 1.0F;
     private final ScaleGestureDetector mScaleGestureDetector;
     private final ZoomRatioUpdatedListener mZoomRatioUpdatedListener;
@@ -70,6 +70,14 @@ public class MotionEventToZoomRatioConverter {
      */
     public boolean onTouchEvent(MotionEvent motionEvent) {
         return mScaleGestureDetector.onTouchEvent(motionEvent);
+    }
+
+    /**
+     * Resets the converter with the new zoom ratio range setting.
+     */
+    public void resetWithNewRange(Range<Float> zoomRatioRange) {
+        mCurrentZoomRatio = 1.0F;
+        mZoomRatioRange = zoomRatioRange;
     }
 
     private float getAndUpdateScaledZoomRatio(float scaleFactor) {
