@@ -36,7 +36,7 @@ class SdkFrameProvider : public FrameProvider,
     Status startStreaming() override;
     Status stopStreaming() final ;
 
-    Status encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp) override;
+    Status encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp, int rotation) override;
 
     // EncoderCallback overrides
     void onEncoded(Buffer* producerBuffer, HardwareBufferDesc& hardwareBufferDesc,
@@ -45,7 +45,7 @@ class SdkFrameProvider : public FrameProvider,
   private:
     Status getHardwareBufferDescFromHardwareBuffer(AHardwareBuffer* hardwareBuffer,
                                                    HardwareBufferDesc& ret);
-    Status encodeImage(HardwareBufferDesc desc, jlong timestamp);
+    Status encodeImage(HardwareBufferDesc desc, jlong timestamp, jint rotation);
     void releaseHardwareBuffer(const HardwareBufferDesc& desc);
 
     std::mutex mMapLock;

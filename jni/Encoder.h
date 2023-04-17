@@ -36,10 +36,11 @@ namespace webcam {
 
 struct EncodeRequest {
     EncodeRequest() = default;
-    EncodeRequest(HardwareBufferDesc& buffer, Buffer* producerBuffer)
-        : srcBuffer(buffer), dstBuffer(producerBuffer) {}
+    EncodeRequest(HardwareBufferDesc& buffer, Buffer* producerBuffer, uint32_t rotation)
+        : srcBuffer(buffer), dstBuffer(producerBuffer), rotationDegrees(rotation) {}
     HardwareBufferDesc srcBuffer;
     Buffer* dstBuffer = nullptr;
+    uint32_t rotationDegrees = 0;
 };
 
 struct I420 {
