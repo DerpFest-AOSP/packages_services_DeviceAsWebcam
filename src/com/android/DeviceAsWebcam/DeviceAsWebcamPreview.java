@@ -157,11 +157,11 @@ public class DeviceAsWebcamPreview extends Activity {
 
     @SuppressLint("ClickableViewAccessibility")
     private void setupZoomUiControl() {
-        if (mLocalFgService == null) {
+        if (mLocalFgService == null || mLocalFgService.getCameraInfo() == null) {
             return;
         }
 
-        Range<Float> zoomRatioRange = mLocalFgService.getZoomRatioRange();
+        Range<Float> zoomRatioRange = mLocalFgService.getCameraInfo().getZoomRatioRange();
 
         if (zoomRatioRange == null) {
             return;
@@ -268,6 +268,6 @@ public class DeviceAsWebcamPreview extends Activity {
 
         mLocalFgService.toggleCamera();
         mMotionEventToZoomRatioConverter.resetWithNewRange(
-                mLocalFgService.getZoomRatioRange());
+                mLocalFgService.getCameraInfo().getZoomRatioRange());
     }
 }
