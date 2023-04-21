@@ -25,6 +25,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.OutputConfiguration;
+import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.ConditionVariable;
@@ -41,6 +42,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class controls the operation of the camera - primarily through the public calls
@@ -73,10 +77,9 @@ public class CameraController {
     private CaptureRequest.Builder mPreviewRequestBuilder;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
-    private HandlerThread mBackgroundThread;
-    private Handler mBackgroundHandler;
-    private Handler mCameraBackgroundHandler;
-    private HandlerThread mCameraBackgroundThread;
+    private HandlerThread mImageReaderThread;
+    private Handler mImageReaderHandler;
+    private ThreadPoolExecutor mThreadPoolExecutor;
     private Surface mPreviewSurface;
     private OutputConfiguration mPreviewOutputConfiguration;
     private OutputConfiguration mWebcamOutputConfiguration;
@@ -111,6 +114,8 @@ public class CameraController {
         public void onError(@NonNull CameraDevice cameraDevice, int error) {
         }
     };
+    private CameraCaptureSession.CaptureCallback mCaptureCallback =
+            new CameraCaptureSession.CaptureCallback() {};
 
     private CameraCaptureSession.StateCallback mCameraCaptureSessionCallback =
             new CameraCaptureSession.StateCallback() {
@@ -121,8 +126,9 @@ public class CameraController {
                     }
                     mCaptureSession = cameraCaptureSession;
                     try {
-                            mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
-                                    null, mBackgroundHandler);
+                            mCaptureSession.setSingleRepeatingRequest(
+                                    mPreviewRequestBuilder.build(), mThreadPoolExecutor,
+                                    mCaptureCallback);
 
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
@@ -204,7 +210,7 @@ public class CameraController {
                     .setUsage(usage)
                     .build();
             mImgReader.setOnImageAvailableListener(mOnImageAvailableListener,
-                    mBackgroundHandler);
+                    mImageReaderHandler);
 
         }
     }
@@ -215,7 +221,7 @@ public class CameraController {
             return;
         }
         try {
-            mCameraManager.openCamera(mCameraId, mCameraStateCallback, mBackgroundHandler);
+            mCameraManager.openCamera(mCameraId, mThreadPoolExecutor, mCameraStateCallback);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -270,7 +276,7 @@ public class CameraController {
     public void startPreviewStreaming(SurfaceTexture surfaceTexture) {
         // Started on a background thread since we don't want to be blocking either the activity's
         // or the service's main thread (we call blocking camera open in these methods internally)
-        mCameraBackgroundHandler.post(new Runnable() {
+        mThreadPoolExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 synchronized (mSerializationLock) {
@@ -332,7 +338,7 @@ public class CameraController {
     public void startWebcamStreaming() {
         // Started on a background thread since we don't want to be blocking the service's main
         // thread (we call blocking camera open in these methods internally)
-        mCameraBackgroundHandler.post(() -> {
+        mThreadPoolExecutor.execute(() -> {
             mStartCaptureWebcamStream.set(true);
             synchronized (mSerializationLock) {
                 if (mImgReader == null) {
@@ -371,7 +377,7 @@ public class CameraController {
     public void stopPreviewStreaming() {
         // Started on a background thread since we don't want to be blocking either the activity's
         // or the service's main thread (we call blocking camera open in these methods internally)
-        mCameraBackgroundHandler.post(new Runnable() {
+        mThreadPoolExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 synchronized (mSerializationLock) {
@@ -423,7 +429,7 @@ public class CameraController {
     public void stopWebcamStreaming() {
         // Started on a background thread since we don't want to be blocking the service's main
         // thread (we call blocking camera open in these methods internally)
-        mCameraBackgroundHandler.post(new Runnable() {
+        mThreadPoolExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 synchronized (mSerializationLock) {
@@ -448,22 +454,26 @@ public class CameraController {
     }
 
     private void startBackgroundThread() {
-        mBackgroundThread = new HandlerThread("SdkCameraFrameProviderThread");
-        mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+        mImageReaderThread = new HandlerThread("SdkCameraFrameProviderThread");
+        mImageReaderThread.start();
+        mImageReaderHandler = new Handler(mImageReaderThread.getLooper());
         // We need two handler threads since the surface texture add / remove calls from the fg
         // service are going to be served on the main thread. To not wait on capture session
         // creation, onCaptureSequenceCompleted we need a new thread to cater to preview surface
         // addition / removal.
-        mCameraBackgroundThread = new HandlerThread("PreviewBackgroundThread");
-        mCameraBackgroundThread.start();
-        mCameraBackgroundHandler = new Handler(mCameraBackgroundThread.getLooper());
+
+        mThreadPoolExecutor =
+                new ThreadPoolExecutor(/*initial pool size*/ 2, /*Max pool size*/2,
+                        /*Alive time*/60, /*units*/TimeUnit.SECONDS, new LinkedBlockingQueue());
+        mThreadPoolExecutor.allowCoreThreadTimeOut(true);
     }
 
     private void createCaptureSessionBlocking() {
         try {
-            mCameraDevice.createCaptureSessionByOutputConfigurations(
-                    mOutputConfigurations, mCameraCaptureSessionCallback, mBackgroundHandler);
+            mCameraDevice.createCaptureSession(
+                    new SessionConfiguration(
+                            SessionConfiguration.SESSION_REGULAR, mOutputConfigurations,
+                            mThreadPoolExecutor, mCameraCaptureSessionCallback));
             mCaptureSessionReady.block();
             mCaptureSessionReady.close();
         } catch (CameraAccessException e) {
