@@ -49,17 +49,14 @@ import com.android.DeviceAsWebcam.view.ZoomController;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 public class DeviceAsWebcamPreview extends Activity {
     private static final String TAG = DeviceAsWebcamPreview.class.getSimpleName();
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final int ROTATION_ANIMATION_DURATION_MS = 300;
 
-    private static final int MAX_PREVIEW_WIDTH = 1920;
-    private static final int MAX_PREVIEW_HEIGHT = 1080;
-
     private final Executor mThreadExecutor = Executors.newFixedThreadPool(2);
-    private final Size mMaxPreviewSize = new Size(MAX_PREVIEW_WIDTH, MAX_PREVIEW_HEIGHT);
     private final ConditionVariable mServiceReady = new ConditionVariable();
 
     private boolean mTextureViewSetup = false;
@@ -71,6 +68,13 @@ public class DeviceAsWebcamPreview extends Activity {
     private TextureView mTextureView;
     private ZoomController mZoomController = null;
     private ImageButton mToggleCameraButton;
+    // A listener to monitor the preview size change events. This might be invoked when toggling
+    // camera or the webcam stream is started after the preview stream.
+    Consumer<Size> mPreviewSizeChangeListener = size -> runOnUiThread(() -> {
+                mPreviewSize = size;
+                setTextureViewScale();
+            }
+    );
 
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -92,17 +96,19 @@ public class DeviceAsWebcamPreview extends Activity {
                         }
                         if (mLocalFgService != null) {
                             mLocalFgService.setOnDestroyedCallback(() -> onServiceDestroyed());
-                            mLocalFgService.setPreviewSurfaceTexture(texture);
-                            if (mLocalFgService.canToggleCamera()) {
-                                mToggleCameraButton.setVisibility(View.VISIBLE);
-                                mToggleCameraButton.setOnClickListener(v -> toggleCamera());
-                            } else {
-                                mToggleCameraButton.setVisibility(View.GONE);
+                            if (mPreviewSize != null) {
+                                mLocalFgService.setPreviewSurfaceTexture(texture, mPreviewSize,
+                                        mPreviewSizeChangeListener);
+                                if (mLocalFgService.canToggleCamera()) {
+                                    mToggleCameraButton.setVisibility(View.VISIBLE);
+                                    mToggleCameraButton.setOnClickListener(v -> toggleCamera());
+                                } else {
+                                    mToggleCameraButton.setVisibility(View.GONE);
+                                }
+                                rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
+                                mLocalFgService.setRotationUpdateListener(
+                                        rotation -> rotateUiByRotationDegrees(rotation));
                             }
-                            rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
-                            mLocalFgService.setRotationUpdateListener(
-                                    rotation -> runOnUiThread(
-                                            () -> rotateUiByRotationDegrees(rotation)));
                         }
                     });
                 }
@@ -167,6 +173,10 @@ public class DeviceAsWebcamPreview extends Activity {
             };
 
     private void setTextureViewScale() {
+        FrameLayout.LayoutParams frameLayout = new FrameLayout.LayoutParams(mPreviewSize.getWidth(),
+                mPreviewSize.getHeight(), Gravity.CENTER);
+        mTextureView.setLayoutParams(frameLayout);
+
         int pWidth = mTextureViewContainer.getWidth();
         int pHeight = mTextureViewContainer.getHeight();
         float scaleYToUnstretched = (float) mPreviewSize.getWidth() / mPreviewSize.getHeight();
@@ -274,12 +284,11 @@ public class DeviceAsWebcamPreview extends Activity {
     }
 
     private void setupTextureViewLayout() {
-        mPreviewSize = mLocalFgService.getSuitablePreviewSize(mMaxPreviewSize);
-        FrameLayout.LayoutParams frameLayout = new FrameLayout.LayoutParams(mPreviewSize.getWidth(),
-                mPreviewSize.getHeight(), Gravity.CENTER);
-        mTextureView.setLayoutParams(frameLayout);
-        setTextureViewScale();
-        setupZoomUiControl();
+        mPreviewSize = mLocalFgService.getSuitablePreviewSize();
+        if (mPreviewSize != null) {
+            setTextureViewScale();
+            setupZoomUiControl();
+        }
     }
 
     private void onServiceDestroyed() {
@@ -353,8 +362,9 @@ public class DeviceAsWebcamPreview extends Activity {
                 setupTextureViewLayout();
                 mTextureViewSetup = true;
             }
-            if (mLocalFgService != null) {
-                mLocalFgService.setPreviewSurfaceTexture(mTextureView.getSurfaceTexture());
+            if (mLocalFgService != null && mPreviewSize != null) {
+                mLocalFgService.setPreviewSurfaceTexture(mTextureView.getSurfaceTexture(),
+                        mPreviewSize, mPreviewSizeChangeListener);
                 rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
                 mLocalFgService.setRotationUpdateListener(rotation ->
                         runOnUiThread(() -> rotateUiByRotationDegrees(rotation)));

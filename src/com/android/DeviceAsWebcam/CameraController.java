@@ -17,6 +17,7 @@
 package com.android.DeviceAsWebcam;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraAccessException;
@@ -28,6 +29,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.ConditionVariable;
@@ -36,6 +38,8 @@ import android.os.HandlerThread;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Range;
+import android.util.Rational;
+import android.util.Size;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -44,11 +48,14 @@ import com.android.DeviceAsWebcam.utils.UserPrefs;
 
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * This class controls the operation of the camera - primarily through the public calls
@@ -87,7 +94,14 @@ public class CameraController {
     private Handler mImageReaderHandler;
     private Executor mCameraCallbacksExecutor;
     private Executor mServiceEventsExecutor;
+    private SurfaceTexture mPreviewSurfaceTexture;
+    /**
+     * Registered by the Preview Activity, and called by CameraController when preview size changes
+     * as a result of the webcam stream changing.
+     */
+    private Consumer<Size> mPreviewSizeChangeListener;
     private Surface mPreviewSurface;
+    private Size mPreviewSize;
     private OutputConfiguration mPreviewOutputConfiguration;
     private OutputConfiguration mWebcamOutputConfiguration;
     private List<OutputConfiguration> mOutputConfigurations;
@@ -373,13 +387,17 @@ public class CameraController {
         mCurrentState = PREVIEW_AND_WEBCAM_STREAMING;
     }
 
-    public void startPreviewStreaming(SurfaceTexture surfaceTexture) {
+    public void startPreviewStreaming(SurfaceTexture surfaceTexture, Size previewSize,
+            Consumer<Size> previewSizeChangeListener) {
         // Started on a background thread since we don't want to be blocking either the activity's
         // or the service's main thread (we call blocking camera open in these methods internally)
         mServiceEventsExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 synchronized (mSerializationLock) {
+                    mPreviewSurfaceTexture = surfaceTexture;
+                    mPreviewSize = previewSize;
+                    mPreviewSizeChangeListener = previewSizeChangeListener;
                     switch (mCurrentState) {
                         case NO_STREAMING:
                             setupPreviewOnlyStreamLocked(surfaceTexture);
@@ -435,6 +453,39 @@ public class CameraController {
         mCurrentState = PREVIEW_AND_WEBCAM_STREAMING;
     }
 
+    /**
+     * Adjust preview output configuration when preview size is changed.
+     */
+    private void adjustPreviewOutputConfiguration() {
+        if (mPreviewSurfaceTexture == null || mPreviewSurface == null) {
+            return;
+        }
+
+        Size suitablePreviewSize = getSuitablePreviewSize();
+        // If the required preview size is the same, don't need to adjust the output configuration
+        if (Objects.equals(suitablePreviewSize, mPreviewSize)) {
+            return;
+        }
+
+        // Removes the original preview surface
+        mPreviewRequestBuilder.removeTarget(mPreviewSurface);
+        // Adjusts the SurfaceTexture default buffer size to match the new preview size
+        mPreviewSurfaceTexture.setDefaultBufferSize(suitablePreviewSize.getWidth(),
+                suitablePreviewSize.getHeight());
+        mPreviewSize = suitablePreviewSize;
+        mPreviewRequestBuilder.addTarget(mPreviewSurface);
+        mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
+        mOutputConfigurations = mWebcamOutputConfiguration != null ? Arrays.asList(
+                mWebcamOutputConfiguration, mPreviewOutputConfiguration) : Arrays.asList(
+                mPreviewOutputConfiguration);
+
+        // Invokes the preview size change listener so that the preview activity can adjust its
+        // size and scale to match the new size.
+        if (mPreviewSizeChangeListener != null) {
+            mPreviewSizeChangeListener.accept(suitablePreviewSize);
+        }
+    }
+
     public void startWebcamStreaming() {
         // Started on a background thread since we don't want to be blocking the service's main
         // thread (we call blocking camera open in these methods internally)
@@ -451,6 +502,7 @@ public class CameraController {
                         setupWebcamOnlyStreamAndOpenCameraLocked();
                         break;
                     case PREVIEW_STREAMING:
+                        adjustPreviewOutputConfiguration();
                         // Its okay to recreate an already running camera session with
                         // preview since the 'glitch' that we see will not be on the webcam
                         // stream.
@@ -469,7 +521,10 @@ public class CameraController {
         mPreviewRequestBuilder.removeTarget(mPreviewSurface);
         mOutputConfigurations = Arrays.asList(mWebcamOutputConfiguration);
         createCaptureSessionBlocking();
+        mPreviewSurfaceTexture = null;
+        mPreviewSizeChangeListener = null;
         mPreviewSurface = null;
+        mPreviewSize = null;
         mCurrentState = WEBCAM_STREAMING;
     }
 
@@ -682,10 +737,14 @@ public class CameraController {
                         setupWebcamOnlyStreamAndOpenCameraLocked();
                         break;
                     case PREVIEW_STREAMING:
+                        // Preview size might change after toggling the camera.
+                        adjustPreviewOutputConfiguration();
                         setupPreviewOnlyStreamLocked(mPreviewSurface);
                         break;
                     case PREVIEW_AND_WEBCAM_STREAMING:
                         setupWebcamOnlyStreamAndOpenCameraLocked();
+                        // Preview size might change after toggling the camera.
+                        adjustPreviewOutputConfiguration();
                         setupPreviewStreamAlongsideWebcamStreamLocked(mPreviewSurface);
                         break;
                 }
@@ -705,6 +764,55 @@ public class CameraController {
      */
     public int getCurrentRotation() {
         return mRotationProvider.getRotation();
+    }
+
+    /**
+     * Returns the best suitable output size for preview.
+     *
+     * <p>If the webcam stream doesn't exist, find the largest 16:9 supported output size which is
+     * not larger than 1080p. If the webcam stream exists, find the largest supported output size
+     * which matches the aspect ratio of the webcam stream size and is not larger than the webcam
+     * stream size.
+     */
+    public Size getSuitablePreviewSize() {
+        if (mCameraId == null) {
+            Log.e(TAG, "No camera is found on the device.");
+            return null;
+        }
+
+        Size maxPreviewSize = mImgReader != null ? new Size(mImgReader.getWidth(),
+                mImgReader.getHeight()) : new Size(1920, 1080);
+
+        // If webcam stream exists, find an output size matching its aspect ratio. Otherwise, find
+        // an output size with 16:9 aspect ratio.
+        final Rational targetAspectRatio = new Rational(maxPreviewSize.getWidth(),
+                maxPreviewSize.getHeight());
+
+        StreamConfigurationMap map = getCameraCharacteristic(mCameraId,
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+        if (map == null) {
+            Log.e(TAG, "Failed to retrieve StreamConfigurationMap. Return null preview size.");
+            return null;
+        }
+
+        Size[] outputSizes = map.getOutputSizes(SurfaceTexture.class);
+
+        if (outputSizes == null || outputSizes.length == 0) {
+            Log.e(TAG, "Empty output sizes. Return null preview size.");
+            return null;
+        }
+
+        Size previewSize = Arrays.stream(outputSizes)
+                .filter(size -> targetAspectRatio.equals(
+                        new Rational(size.getWidth(), size.getHeight())))
+                .filter(size -> size.getWidth() * size.getHeight()
+                        <= maxPreviewSize.getWidth() * maxPreviewSize.getHeight())
+                .max(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                .orElse(null);
+
+        Log.d(TAG, "Suitable preview size is " + previewSize);
+        return previewSize;
     }
 
     private static class ImageAndBuffer {
