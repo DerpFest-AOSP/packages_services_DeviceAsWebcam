@@ -40,6 +40,7 @@ import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
 
 import java.lang.ref.WeakReference;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class DeviceAsWebcamFgService extends Service {
     private static final String TAG = "DeviceAsWebcamFgService";
@@ -151,15 +152,20 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     /**
-     * Returns a suitable preview size <= the maxPreviewSize so there is no FoV change between
-     * webcam and preview streams
+     * Returns the best suitable output size for preview.
      *
-     * @param maxPreviewSize The upper limit of preview size
+     * <p>If the webcam stream doesn't exist, find the largest 16:9 supported output size which is
+     * not larger than 1080p. If the webcam stream exists, find the largest supported output size
+     * which matches the aspect ratio of the webcam stream size and is not larger than the webcam
+     * stream size.
      */
-    public Size getSuitablePreviewSize(Size maxPreviewSize) {
+    public Size getSuitablePreviewSize() {
         synchronized (mServiceLock) {
-            // TODO(b/267794640): Make this dynamic
-            return new Size(1920, 1080);
+            if (!mServiceRunning) {
+                Log.e(TAG, "getSuitablePreviewSize called after Service was destroyed.");
+                return null;
+            }
+            return mCameraController.getSuitablePreviewSize();
         }
     }
 
@@ -168,14 +174,18 @@ public class DeviceAsWebcamFgService extends Service {
      * returned by {@link #getSuitablePreviewSize}.
      *
      * @param surfaceTexture surfaceTexture to stream preview frames to
+     * @param previewSize the preview size
+     * @param previewSizeChangeListener a listener to monitor the preview size change events.
      */
-    public void setPreviewSurfaceTexture(SurfaceTexture surfaceTexture) {
+    public void setPreviewSurfaceTexture(SurfaceTexture surfaceTexture, Size previewSize,
+            Consumer<Size> previewSizeChangeListener) {
         synchronized (mServiceLock) {
             if (!mServiceRunning) {
                 Log.e(TAG, "setPreviewSurfaceTexture called after Service was destroyed.");
                 return;
             }
-            mCameraController.startPreviewStreaming(surfaceTexture);
+            mCameraController.startPreviewStreaming(surfaceTexture, previewSize,
+                    previewSizeChangeListener);
         }
     }
 
