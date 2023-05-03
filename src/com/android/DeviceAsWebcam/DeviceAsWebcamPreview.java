@@ -16,6 +16,7 @@
 
 package com.android.DeviceAsWebcam;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -25,10 +26,13 @@ import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.IBinder;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.view.Gravity;
 import android.view.TextureView;
+import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -44,6 +48,7 @@ public class DeviceAsWebcamPreview extends Activity {
     private Size mPreviewSize;
     private FrameLayout mParentView;
     private TextureView mTextureView;
+    private TextView mZoomRatioTextView;
     private DeviceAsWebcamFgService mLocalFgService;
     private boolean mPreviewSurfaceRemoved = false;
     private SurfaceTexture mPreviewTexture;
@@ -111,6 +116,24 @@ public class DeviceAsWebcamPreview extends Activity {
         }
     };
 
+    private MotionEventToZoomRatioConverter mMotionEventToZoomRatioConverter = null;
+    private MotionEventToZoomRatioConverter.ZoomRatioUpdatedListener mZoomRatioUpdatedListener =
+            new MotionEventToZoomRatioConverter.ZoomRatioUpdatedListener() {
+                @Override
+                public void onZoomRatioUpdated(float updatedZoomRatio) {
+                    if (mLocalFgService == null) {
+                        return;
+                    }
+
+                    mLocalFgService.setZoomRatio(updatedZoomRatio);
+                    mZoomRatioTextView.setVisibility(View.VISIBLE);
+                    mZoomRatioTextView.setText(getString(R.string.zoom_ratio, updatedZoomRatio));
+                    getMainThreadHandler().postDelayed(
+                            () -> mZoomRatioTextView.setVisibility(View.INVISIBLE), 500
+                    );
+                }
+            };
+
     private void setTextureViewRotationAndScale() {
         int pWidth = mParentView.getWidth();
         int pHeight = mParentView.getHeight();
@@ -126,12 +149,40 @@ public class DeviceAsWebcamPreview extends Activity {
         mTextureView.setScaleY(scaleYToUnstretched * additionalScaleChosen);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupZoomUiControl() {
+        if (mLocalFgService == null) {
+            return;
+        }
+
+        Range<Float> zoomRatioRange = mLocalFgService.getZoomRatioRange();
+
+        if (zoomRatioRange == null) {
+            return;
+        }
+
+        // Retrieves current zoom ratio setting from CameraController so that the zoom ratio set by
+        // the previous closed activity can be correctly restored
+        float currentZoomRatio = mLocalFgService.getZoomRatio();
+
+        mMotionEventToZoomRatioConverter = new MotionEventToZoomRatioConverter(
+                getApplicationContext(), zoomRatioRange, currentZoomRatio,
+                mZoomRatioUpdatedListener);
+
+        mTextureView.setOnTouchListener(
+                (view, event) -> {
+                    mMotionEventToZoomRatioConverter.onTouchEvent(event);
+                    return true;
+                });
+    }
+
     private void setupTextureViewLayout() {
         mPreviewSize = mLocalFgService.getSuitablePreviewSize(mMaxPreviewSize);
         FrameLayout.LayoutParams frameLayout = new FrameLayout.LayoutParams(mPreviewSize.getWidth(),
                 mPreviewSize.getHeight(), Gravity.CENTER);
         mTextureView.setLayoutParams(frameLayout);
         setTextureViewRotationAndScale();
+        setupZoomUiControl();
     }
 
     private void onServiceDestroyed() {
@@ -153,8 +204,8 @@ public class DeviceAsWebcamPreview extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.preview_layout);
         mParentView = findViewById(R.id.container_view);
-        mTextureView = new TextureView(this);
-        mParentView.addView(mTextureView);
+        mTextureView = findViewById(R.id.texture_view);
+        mZoomRatioTextView = findViewById(R.id.zoom_ratio_text_view);
         bindService(new Intent(this, DeviceAsWebcamFgService.class), 0, mThreadExecutor,
                 mConnection);
     }

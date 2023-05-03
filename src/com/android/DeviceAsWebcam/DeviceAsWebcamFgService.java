@@ -29,6 +29,7 @@ import android.hardware.HardwareBuffer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 
 import androidx.core.app.NotificationCompat;
@@ -194,6 +195,48 @@ public class DeviceAsWebcamFgService extends Service {
                 return;
             }
             mDestroyActivityCallback = callback;
+        }
+    }
+
+    /**
+     * Returns the available zoom ratio range of the working camera.
+     *
+     * @return the zoom ratio range retrieved from the camera characteristic or null when failed
+     * to obtain the value.
+     */
+    public Range<Float> getZoomRatioRange() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "getZoomRatioRange called after Service was destroyed.");
+                return null;
+            }
+            return mCameraController.getZoomRatioRange();
+        }
+    }
+
+    /**
+     * Sets the new zoom ratio setting to the working camera.
+     */
+    public void setZoomRatio(float zoomRatio) {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "setZoomRatio called after Service was destroyed.");
+                return;
+            }
+            mCameraController.setZoomRatio(zoomRatio);
+        }
+    }
+
+    /**
+     * Returns current zoom ratio setting.
+     */
+    public float getZoomRatio() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "getZoomRatio called after Service was destroyed.");
+                return 1.0f;
+            }
+            return mCameraController.getZoomRatio();
         }
     }
 
