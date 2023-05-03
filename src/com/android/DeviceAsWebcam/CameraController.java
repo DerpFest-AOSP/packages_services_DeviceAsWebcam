@@ -24,6 +24,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
@@ -71,6 +72,9 @@ public class CameraController {
 
     private static final int MAX_BUFFERS = 4;
 
+    private String mBackCameraId = null;
+    private String mFrontCameraId = null;
+
     private ImageReader mImgReader;
     private int mCurrentState = NO_STREAMING;
     private Context mContext;
@@ -94,7 +98,7 @@ public class CameraController {
     private ConcurrentHashMap<Long, ImageAndBuffer> mImageMap = new ConcurrentHashMap<>();
     private int mFps;
     // TODO(b/267794640): UI to select camera id
-    private String mCameraId = "0"; // Default camera id.
+    private String mCameraId = null;
 
     private CameraDevice.StateCallback mCameraStateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -197,6 +201,30 @@ public class CameraController {
         }
         startBackgroundThread();
         mCameraManager = mContext.getSystemService(CameraManager.class);
+        refreshLensFacingCameraIds();
+        mCameraId = mBackCameraId != null ? mBackCameraId : mFrontCameraId;
+    }
+
+    private void refreshLensFacingCameraIds() {
+        try {
+            String[] cameraIdList = mCameraManager.getCameraIdList();
+            if (cameraIdList == null) {
+                return;
+            }
+            for (String cameraId : cameraIdList) {
+                CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
+                        cameraId);
+                if (mBackCameraId == null && characteristics.get(CameraCharacteristics.LENS_FACING)
+                        == CameraMetadata.LENS_FACING_BACK) {
+                    mBackCameraId = cameraId;
+                } else if (mFrontCameraId == null && characteristics.get(
+                        CameraCharacteristics.LENS_FACING) == CameraMetadata.LENS_FACING_FRONT) {
+                    mFrontCameraId = cameraId;
+                }
+            }
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Failed to retrieve camera id list.", e);
+        }
     }
 
     public void setWebcamStreamConfig(boolean mjpeg, int width, int height, int fps) {
@@ -223,6 +251,14 @@ public class CameraController {
             Log.e(TAG, "CameraManager is not initialized, aborting");
             return;
         }
+        if (mCameraId == null) {
+            Log.e(TAG, "No camera is found on the device, aborting");
+            return;
+        }
+        if (mCameraDevice != null) {
+            mCameraDevice.close();
+            mCameraDevice = null;
+        }
         try {
             mCameraManager.openCamera(mCameraId, mThreadPoolExecutor, mCameraStateCallback);
         } catch (CameraAccessException e) {
@@ -236,7 +272,11 @@ public class CameraController {
     }
 
     private void setupPreviewOnlyStreamLocked(SurfaceTexture previewSurfaceTexture) {
-        mPreviewSurface = new Surface(previewSurfaceTexture);
+        setupPreviewOnlyStreamLocked(new Surface(previewSurfaceTexture));
+    }
+
+    private void setupPreviewOnlyStreamLocked(Surface previewSurface) {
+        mPreviewSurface = previewSurface;
         try {
             openCameraBlocking();
             mPreviewRequestBuilder =
@@ -256,6 +296,7 @@ public class CameraController {
 
             mOutputConfigurations = Arrays.asList(mPreviewOutputConfiguration);
             createCaptureSessionBlocking();
+            mZoomRatio = 1.0f;
             mCurrentState = PREVIEW_STREAMING;
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -264,10 +305,14 @@ public class CameraController {
 
     private void setupPreviewStreamAlongsideWebcamStreamLocked(
             SurfaceTexture previewSurfaceTexture) {
+        setupPreviewStreamAlongsideWebcamStreamLocked(new Surface(previewSurfaceTexture));
+    }
+
+    private void setupPreviewStreamAlongsideWebcamStreamLocked(Surface previewSurface) {
         if (VERBOSE) {
             Log.v(TAG, "setupPreviewAlongsideWebcam");
         }
-        mPreviewSurface = new Surface(previewSurfaceTexture);
+        mPreviewSurface = previewSurface;
         mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
         mPreviewRequestBuilder.addTarget(mPreviewSurface);
         mOutputConfigurations = Arrays.asList(mPreviewOutputConfiguration,
@@ -507,6 +552,10 @@ public class CameraController {
      * . The returned value might be null when failed to obtain it.
      */
     public Range<Float> getZoomRatioRange() {
+        if (mCameraId == null) {
+            Log.e(TAG, "No camera is found on the device.");
+            return null;
+        }
         try {
             CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
                     mCameraId);
@@ -544,6 +593,44 @@ public class CameraController {
      */
     public float getZoomRatio() {
         return mZoomRatio;
+    }
+
+    /**
+     * Returns whether the device can support toggle camera function.
+     *
+     * @return {@code true} if the device has both back and front cameras. Otherwise, returns
+     * {@code false}.
+     */
+    public boolean canToggleCamera() {
+        return mBackCameraId != null && mFrontCameraId != null;
+    }
+
+    /**
+     * Toggles camera between the back and front cameras.
+     */
+    public void toggleCamera() {
+        mThreadPoolExecutor.execute(() -> {
+            synchronized (mSerializationLock) {
+                mCaptureSession.close();
+                if (mCameraId.equals(mBackCameraId)) {
+                    mCameraId = mFrontCameraId;
+                } else {
+                    mCameraId = mBackCameraId;
+                }
+                switch (mCurrentState) {
+                    case WEBCAM_STREAMING:
+                        setupWebcamOnlyStreamAndOpenCameraLocked();
+                        break;
+                    case PREVIEW_STREAMING:
+                        setupPreviewOnlyStreamLocked(mPreviewSurface);
+                        break;
+                    case PREVIEW_AND_WEBCAM_STREAMING:
+                        setupWebcamOnlyStreamAndOpenCameraLocked();
+                        setupPreviewStreamAlongsideWebcamStreamLocked(mPreviewSurface);
+                        break;
+                }
+            }
+        });
     }
 
     private static class ImageAndBuffer {
