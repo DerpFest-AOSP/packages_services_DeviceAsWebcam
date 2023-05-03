@@ -32,6 +32,7 @@ import android.view.Gravity;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import java.util.concurrent.Executor;
@@ -49,6 +50,7 @@ public class DeviceAsWebcamPreview extends Activity {
     private FrameLayout mParentView;
     private TextureView mTextureView;
     private TextView mZoomRatioTextView;
+    private ImageButton mToggleCameraImageButton;
     private DeviceAsWebcamFgService mLocalFgService;
     private boolean mPreviewSurfaceRemoved = false;
     private SurfaceTexture mPreviewTexture;
@@ -76,6 +78,10 @@ public class DeviceAsWebcamPreview extends Activity {
                     if (mLocalFgService != null) {
                         mLocalFgService.setOnDestroyedCallback(() -> onServiceDestroyed());
                         mLocalFgService.setPreviewSurfaceTexture(texture);
+                        if (mLocalFgService.canToggleCamera()) {
+                            mToggleCameraImageButton.setVisibility(View.VISIBLE);
+                            mToggleCameraImageButton.setOnClickListener(v -> toggleCamera());
+                        }
                     }
                 }
 
@@ -206,6 +212,7 @@ public class DeviceAsWebcamPreview extends Activity {
         mParentView = findViewById(R.id.container_view);
         mTextureView = findViewById(R.id.texture_view);
         mZoomRatioTextView = findViewById(R.id.zoom_ratio_text_view);
+        mToggleCameraImageButton = findViewById(R.id.toggle_camera_button);
         bindService(new Intent(this, DeviceAsWebcamFgService.class), 0, mThreadExecutor,
                 mConnection);
     }
@@ -252,5 +259,15 @@ public class DeviceAsWebcamPreview extends Activity {
         }
         unbindService(mConnection);
         super.onDestroy();
+    }
+
+    private void toggleCamera() {
+        if (mLocalFgService == null) {
+            return;
+        }
+
+        mLocalFgService.toggleCamera();
+        mMotionEventToZoomRatioConverter.resetWithNewRange(
+                mLocalFgService.getZoomRatioRange());
     }
 }
