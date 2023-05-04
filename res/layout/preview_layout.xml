@@ -27,24 +27,30 @@
         android:layout_height="match_parent"
         android:contentDescription="@string/view_finder_description" />
 
-    <TextView
-        android:id="@+id/zoom_ratio_text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="32sp"
-        android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="128dp"
-        android:contentDescription="@string/zoom_ratio_description" />
+    <FrameLayout
+        android:id="@+id/ui_control_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <ImageButton
-        android:id="@+id/toggle_camera_button"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="64dp"
-        android:layout_marginEnd="32dp"
-        android:visibility="invisible"
-        android:background="@drawable/ic_switch"
-        android:contentDescription="@string/toggle_camera_button_description" />
+        <TextView
+            android:id="@+id/zoom_ratio_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="48dp"
+            android:contentDescription="@string/zoom_ratio_description"
+            android:textSize="32sp"
+            android:visibility="invisible" />
 
+        <ImageButton
+            android:id="@+id/toggle_camera_button"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="32dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/ic_switch"
+            android:contentDescription="@string/toggle_camera_button_description"
+            android:visibility="invisible" />
+    </FrameLayout>
 </FrameLayout>
