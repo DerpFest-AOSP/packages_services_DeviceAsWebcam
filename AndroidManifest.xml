@@ -6,8 +6,9 @@
      package="com.android.DeviceAsWebcam">
     <uses-feature android:name="android.hardware.usb.host"/>
     <uses-feature android:name="android.hardware.camera.any" android:required="true"/>
-    <uses-feature android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
 
     <application
          android:label="@string/app_label">
@@ -24,6 +25,8 @@
             android:label="@string/app_label">
         </activity>
 
-        <service android:name=".DeviceAsWebcamFgService"/>
+        <service
+            android:name=".DeviceAsWebcamFgService"
+            android:foregroundServiceType="camera"/>
     </application>
 </manifest>
