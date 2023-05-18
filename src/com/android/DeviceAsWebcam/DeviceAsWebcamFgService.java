@@ -24,6 +24,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.os.Binder;
@@ -110,7 +111,7 @@ public class DeviceAsWebcamFgService extends Service {
                 NotificationManager.IMPORTANCE_DEFAULT).setCategory(
                 Notification.CATEGORY_SERVICE).setContentIntent(pendingIntent).setSmallIcon(
                 R.drawable.ic_root_webcam).build();
-        startForeground(/* id= */ 1, notif);
+        startForeground(/* id= */ 1, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
     }
 
     private int setupServicesAndStartListening() {
