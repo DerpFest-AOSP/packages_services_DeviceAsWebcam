@@ -176,8 +176,8 @@ public class CameraController {
                     HardwareBuffer hardwareBuffer = image.getHardwareBuffer();
                     mImageMap.put(ts, new ImageAndBuffer(image, hardwareBuffer));
                     // Callback into DeviceAsWebcamFgService to encode image
-                    if ((!mStartCaptureWebcamStream.get()) ||
-                            (service.nativeEncodeImage(hardwareBuffer, ts) != 0)) {
+                    if ((!mStartCaptureWebcamStream.get()) || (service.nativeEncodeImage(
+                            hardwareBuffer, ts, getCurrentRotation()) != 0)) {
                         if (VERBOSE) {
                             Log.v(TAG,
                                     "Couldn't get buffer immediately, returning image images. "
@@ -191,6 +191,8 @@ public class CameraController {
             };
 
     private volatile float mZoomRatio = 1.0f;
+    private RotationProvider mRotationProvider;
+    private CameraInfo mCameraInfo = null;
 
     public CameraController(Context context, WeakReference<DeviceAsWebcamFgService> serviceWeak) {
         mContext = context;
@@ -203,6 +205,12 @@ public class CameraController {
         mCameraManager = mContext.getSystemService(CameraManager.class);
         refreshLensFacingCameraIds();
         mCameraId = mBackCameraId != null ? mBackCameraId : mFrontCameraId;
+        mCameraInfo = createCameraInfo(mCameraId);
+        mRotationProvider = new RotationProvider(context.getApplicationContext(),
+                mCameraInfo.getSensorOrientation());
+        // Adds an empty listener to enable the RotationProvider so that we can get the rotation
+        // degrees info to rotate the webcam stream images.
+        mRotationProvider.addListener(mThreadPoolExecutor, rotation -> {});
     }
 
     private void refreshLensFacingCameraIds() {
@@ -212,19 +220,38 @@ public class CameraController {
                 return;
             }
             for (String cameraId : cameraIdList) {
-                CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
-                        cameraId);
-                if (mBackCameraId == null && characteristics.get(CameraCharacteristics.LENS_FACING)
-                        == CameraMetadata.LENS_FACING_BACK) {
+                int lensFacing = getCameraCharacteristic(cameraId,
+                        CameraCharacteristics.LENS_FACING);
+                if (mBackCameraId == null && lensFacing == CameraMetadata.LENS_FACING_BACK) {
                     mBackCameraId = cameraId;
-                } else if (mFrontCameraId == null && characteristics.get(
-                        CameraCharacteristics.LENS_FACING) == CameraMetadata.LENS_FACING_FRONT) {
+                } else if (mFrontCameraId == null
+                        && lensFacing == CameraMetadata.LENS_FACING_FRONT) {
                     mFrontCameraId = cameraId;
                 }
             }
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to retrieve camera id list.", e);
         }
+    }
+
+    private CameraInfo createCameraInfo(String cameraId) {
+        return cameraId == null ? null : new CameraInfo(
+                getCameraCharacteristic(cameraId, CameraCharacteristics.LENS_FACING),
+                getCameraCharacteristic(cameraId, CameraCharacteristics.SENSOR_ORIENTATION),
+                getCameraCharacteristic(cameraId, CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE)
+        );
+    }
+
+    private <T> T getCameraCharacteristic(String cameraId, CameraCharacteristics.Key<T> key) {
+        try {
+            CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
+                    cameraId);
+            return characteristics.get(key);
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Failed to get" + key.getName() + "characteristics for camera " + cameraId
+                    + ".");
+        }
+        return null;
     }
 
     public void setWebcamStreamConfig(boolean mjpeg, int width, int height, int fps) {
@@ -545,25 +572,10 @@ public class CameraController {
     }
 
     /**
-     * Returns the available zoom ratio range of the working camera.
-     *
-     * @return the zoom ratio range is retrieved from {@link CameraCharacteristics} with
-     * {@link CameraCharacteristics#CONTROL_ZOOM_RATIO_RANGE} which is supported since Android 11
-     * . The returned value might be null when failed to obtain it.
+     * Returns the {@link CameraInfo} of the working camera.
      */
-    public Range<Float> getZoomRatioRange() {
-        if (mCameraId == null) {
-            Log.e(TAG, "No camera is found on the device.");
-            return null;
-        }
-        try {
-            CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
-                    mCameraId);
-            return characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
-        } catch (CameraAccessException e) {
-            Log.e(TAG, "Failed to get zoom ratio range for camera " + mCameraId + ".", e);
-        }
-        return null;
+    public CameraInfo getCameraInfo() {
+        return mCameraInfo;
     }
 
     /**
@@ -617,6 +629,7 @@ public class CameraController {
                 } else {
                     mCameraId = mBackCameraId;
                 }
+                mCameraInfo = createCameraInfo(mCameraId);
                 switch (mCurrentState) {
                     case WEBCAM_STREAMING:
                         setupWebcamOnlyStreamAndOpenCameraLocked();
@@ -631,6 +644,13 @@ public class CameraController {
                 }
             }
         });
+    }
+
+    /**
+     * Returns current rotation degrees value.
+     */
+    public int getCurrentRotation() {
+        return mRotationProvider.getRotation();
     }
 
     private static class ImageAndBuffer {
