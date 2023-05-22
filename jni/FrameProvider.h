@@ -42,7 +42,7 @@ class FrameProvider {
     virtual void setStreamConfig() = 0;
     virtual Status startStreaming() = 0;
     virtual Status stopStreaming() = 0;
-    virtual Status encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp) = 0;
+    virtual Status encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp, int rotation) = 0;
     [[nodiscard]] virtual bool isInited() const { return mInited; }
 
   protected:

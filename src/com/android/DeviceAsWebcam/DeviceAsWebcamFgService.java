@@ -30,7 +30,6 @@ import android.hardware.HardwareBuffer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
-import android.util.Range;
 import android.util.Size;
 
 import androidx.core.app.NotificationCompat;
@@ -200,18 +199,15 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     /**
-     * Returns the available zoom ratio range of the working camera.
-     *
-     * @return the zoom ratio range retrieved from the camera characteristic or null when failed
-     * to obtain the value.
+     * Returns the {@link CameraInfo} of the working camera.
      */
-    public Range<Float> getZoomRatioRange() {
+    public CameraInfo getCameraInfo() {
         synchronized (mServiceLock) {
             if (!mServiceRunning) {
-                Log.e(TAG, "getZoomRatioRange called after Service was destroyed.");
+                Log.e(TAG, "getCameraInfo called after Service was destroyed.");
                 return null;
             }
-            return mCameraController.getZoomRatioRange();
+            return mCameraController.getCameraInfo();
         }
     }
 
@@ -347,7 +343,7 @@ public class DeviceAsWebcamFgService extends Service {
      * @param timestamp timestamp associated with the buffer which uniquely identifies the buffer
      * @return 0 if buffer was successfully queued for encoding. non-0 otherwise.
      */
-    public native int nativeEncodeImage(HardwareBuffer buffer, long timestamp);
+    public native int nativeEncodeImage(HardwareBuffer buffer, long timestamp, int rotation);
 
     /**
      * Called by {@link #onDestroy} to give the JNI code a chance to clean up before the service
