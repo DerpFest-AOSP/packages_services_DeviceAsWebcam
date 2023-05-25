@@ -446,11 +446,18 @@ void UVCProvider::UVCDevice::setStreamingControl(struct uvc_streaming_control* s
     uint8_t chosenFormatIndex = req->formatIndex > mUVCProperties->streaming.formats.size()
                                         ? mUVCProperties->streaming.formats.size()
                                         : req->formatIndex;
+    if (chosenFormatIndex <= 0) {
+        return;
+    }
     const ConfigFormat& chosenFormat = mUVCProperties->streaming.formats[chosenFormatIndex - 1];
     uint8_t chosenFrameIndex = req->frameSizeIndex > chosenFormat.frames.size()
                                        ? chosenFormat.frames.size()
                                        : req->frameSizeIndex;
-    ALOGI("%s: chosenFrameIndex: %d", __FUNCTION__, chosenFrameIndex);
+    if (chosenFrameIndex <= 0) {
+        return;
+    }
+    ALOGV("%s: chosenFormatIndex %d chosenFrameIndex: %d", __FUNCTION__, chosenFormatIndex,
+            chosenFrameIndex);
     const ConfigFrame& chosenFrame = chosenFormat.frames[chosenFrameIndex - 1];
     uint32_t reqFrameInterval = req->frameInterval;
     bool largerFound = false;
