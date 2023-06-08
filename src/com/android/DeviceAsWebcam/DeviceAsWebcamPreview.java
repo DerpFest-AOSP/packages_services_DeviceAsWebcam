@@ -22,6 +22,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.IBinder;
@@ -31,6 +32,8 @@ import android.util.Size;
 import android.view.Gravity;
 import android.view.TextureView;
 import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -49,6 +52,7 @@ public class DeviceAsWebcamPreview extends Activity {
     private Size mPreviewSize;
     private FrameLayout mParentView;
     private TextureView mTextureView;
+    private FrameLayout mUiControlContainer;
     private TextView mZoomRatioTextView;
     private ImageButton mToggleCameraImageButton;
     private DeviceAsWebcamFgService mLocalFgService;
@@ -82,6 +86,9 @@ public class DeviceAsWebcamPreview extends Activity {
                             mToggleCameraImageButton.setVisibility(View.VISIBLE);
                             mToggleCameraImageButton.setOnClickListener(v -> toggleCamera());
                         }
+                        rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
+                        mLocalFgService.setRotationUpdateListener(
+                                rotation -> rotateUiByRotationDegrees(rotation));
                     }
                 }
 
@@ -182,6 +189,37 @@ public class DeviceAsWebcamPreview extends Activity {
                 });
     }
 
+    private void rotateUiByRotationDegrees(int rotation) {
+        float pivotX = mUiControlContainer.getWidth() / 2.0f;
+        float pivotY = mUiControlContainer.getHeight() / 2.0f;
+
+        if (mUiControlContainer.getWidth() < mUiControlContainer.getHeight()) {
+            // Corrects the pivot point for the container's new dimensions
+            pivotX = mUiControlContainer.getHeight() / 2.0f;
+            pivotY = mUiControlContainer.getWidth() / 2.0f;
+            // Adjusts the UI control container dimensions for rotating to the landscape
+            // direction later.
+            FrameLayout.LayoutParams frameLayout = new FrameLayout.LayoutParams(
+                    mUiControlContainer.getHeight(), mUiControlContainer.getWidth(),
+                    Gravity.CENTER);
+            mUiControlContainer.setLayoutParams(frameLayout);
+        }
+
+        mUiControlContainer.setPivotX(pivotX);
+        mUiControlContainer.setPivotY(pivotY);
+
+        // Rotates the UI control container according to the device sensor rotation degrees and the
+        // camera sensor orientation.
+        if (mLocalFgService.getCameraInfo().getLensFacing()
+                == CameraCharacteristics.LENS_FACING_BACK) {
+            mUiControlContainer.setRotation(
+                    rotation + mLocalFgService.getCameraInfo().getSensorOrientation());
+        } else {
+            mUiControlContainer.setRotation(
+                    rotation + 360 - mLocalFgService.getCameraInfo().getSensorOrientation());
+        }
+    }
+
     private void setupTextureViewLayout() {
         mPreviewSize = mLocalFgService.getSuitablePreviewSize(mMaxPreviewSize);
         FrameLayout.LayoutParams frameLayout = new FrameLayout.LayoutParams(mPreviewSize.getWidth(),
@@ -211,15 +249,30 @@ public class DeviceAsWebcamPreview extends Activity {
         setContentView(R.layout.preview_layout);
         mParentView = findViewById(R.id.container_view);
         mTextureView = findViewById(R.id.texture_view);
+        mUiControlContainer = findViewById(R.id.ui_control_container);
         mZoomRatioTextView = findViewById(R.id.zoom_ratio_text_view);
         mToggleCameraImageButton = findViewById(R.id.toggle_camera_button);
         bindService(new Intent(this, DeviceAsWebcamFgService.class), 0, mThreadExecutor,
                 mConnection);
     }
 
+    private void hideSystemUiAndActionBar() {
+        // Hides status bar
+        getWindow().setDecorFitsSystemWindows(false);
+        WindowInsetsController controller = getWindow().getInsetsController();
+        if (controller != null) {
+            controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+            controller.setSystemBarsBehavior(
+                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        }
+        // Hides the action bar
+        getActionBar().hide();
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        hideSystemUiAndActionBar();
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
@@ -233,6 +286,9 @@ public class DeviceAsWebcamPreview extends Activity {
             mPreviewSurfaceRemoved = false;
             if (mLocalFgService != null) {
                 mLocalFgService.setPreviewSurfaceTexture(mTextureView.getSurfaceTexture());
+                rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
+                mLocalFgService.setRotationUpdateListener(
+                        rotation -> rotateUiByRotationDegrees(rotation));
             }
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
@@ -243,6 +299,7 @@ public class DeviceAsWebcamPreview extends Activity {
     public void onPause() {
         if (mLocalFgService != null) {
             mLocalFgService.removePreviewSurfaceTexture();
+            mLocalFgService.setRotationUpdateListener(null);
         }
         super.onPause();
     }
