@@ -18,6 +18,8 @@ package com.android.DeviceAsWebcam;
 
 import android.util.Range;
 
+import java.util.List;
+
 /**
  * A class for providing camera related information.
  */
@@ -25,10 +27,13 @@ public class CameraInfo {
     private final int mLensFacing;
     private final int mSensorOrientation;
     private final Range<Float> mZoomRatioRange;
-    public CameraInfo(int lensFacing, int sensorOrientation, Range<Float> zoomRatioRange) {
+    private final List<VendorCameraPrefs.PhysicalCameraInfo> mPhysicalCameraInfos;
+    public CameraInfo(int lensFacing, int sensorOrientation, Range<Float> zoomRatioRange,
+            List<VendorCameraPrefs.PhysicalCameraInfo> physicalInfos) {
         mLensFacing = lensFacing;
         mSensorOrientation = sensorOrientation;
         mZoomRatioRange = zoomRatioRange;
+        mPhysicalCameraInfos = physicalInfos;
     }
 
     /**
@@ -50,5 +55,9 @@ public class CameraInfo {
      */
     public Range<Float> getZoomRatioRange() {
         return mZoomRatioRange;
+    }
+
+    public List<VendorCameraPrefs.PhysicalCameraInfo> getPhysicalCameraInfos() {
+        return mPhysicalCameraInfos;
     }
 }
