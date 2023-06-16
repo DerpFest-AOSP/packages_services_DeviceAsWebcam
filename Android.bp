@@ -6,7 +6,9 @@ android_app {
     name: "DeviceAsWebcam",
 
     static_libs: [
+        "androidx-constraintlayout_constraintlayout",
         "androidx.appcompat_appcompat",
+        "androidx.cardview_cardview",
     ],
 
     srcs: ["src/**/*.java"],

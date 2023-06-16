@@ -14,12 +14,16 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<resources>
-    <color name="icActive">#FFFFFFFF</color>
-    <color name="icFocused">#DDFFFFFF</color>
-    <color name="icPressed">#AAFFFFFF</color>
-
-    <color name="ripple">@android:color/system_accent1_600</color>
-    <color name="bg">@android:color/system_neutral2_900</color>
-    <color name="button">@android:color/system_accent1_400</color>
-</resources>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/ripple">
+    <item>
+        <shape android:shape="rectangle">
+            <corners
+                android:topLeftRadius="32dp"
+                android:topRightRadius="32dp"
+                android:bottomLeftRadius="32dp"
+                android:bottomRightRadius="32dp"/>
+            <solid android:color="@color/button"/>
+        </shape>
+    </item>
+</ripple>
