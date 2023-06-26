@@ -24,4 +24,9 @@
     <string name="zoom_ratio">%.2fx</string>
     <!-- Accessibility description for the toggle camera image button -->
     <string name="toggle_camera_button_description">Toggle camera direction button</string>
+    <!-- Notification  -->
+    <string name="notif_channel_name">Foreground Service</string>
+    <string name="notif_ticker">Device as Webcam</string>
+    <string name="notif_title">Device as Webcam</string>
+    <string name="notif_desc">Tap to configure Webcam</string>
 </resources>
