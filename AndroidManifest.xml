@@ -23,7 +23,8 @@
             android:excludeFromRecents="true"
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:label="@string/app_label">
+            android:label="@string/app_label"
+            android:theme="@style/ActivityTheme">
         </activity>
 
         <service
