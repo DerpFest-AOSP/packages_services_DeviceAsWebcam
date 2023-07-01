@@ -150,7 +150,7 @@ public class DeviceAsWebcamPreview extends Activity {
                     }
 
                     mLocalFgService.setZoomRatio(updatedZoomRatio);
-                    mZoomRatioTextView.setText(getString(R.string.zoom_ratio, updatedZoomRatio));
+                    updateZoomText(updatedZoomRatio);
                 }
             };
 
@@ -195,7 +195,7 @@ public class DeviceAsWebcamPreview extends Activity {
         // Retrieves current zoom ratio setting from CameraController so that the zoom ratio set by
         // the previous closed activity can be correctly restored
         float currentZoomRatio = mLocalFgService.getZoomRatio();
-        mZoomRatioTextView.setText(getString(R.string.zoom_ratio, currentZoomRatio));
+        updateZoomText(currentZoomRatio);
 
         mMotionEventToZoomRatioConverter = new MotionEventToZoomRatioConverter(
                 getApplicationContext(), zoomRatioRange, currentZoomRatio,
@@ -317,8 +317,7 @@ public class DeviceAsWebcamPreview extends Activity {
                 mLocalFgService.setPreviewSurfaceTexture(mTextureView.getSurfaceTexture());
                 rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
                 mLocalFgService.setRotationUpdateListener(this::rotateUiByRotationDegrees);
-                mZoomRatioTextView.setText(getString(R.string.zoom_ratio,
-                        mLocalFgService.getZoomRatio()));
+                updateZoomText(mLocalFgService.getZoomRatio());
             }
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
@@ -349,7 +348,12 @@ public class DeviceAsWebcamPreview extends Activity {
         }
 
         mLocalFgService.toggleCamera();
-        mMotionEventToZoomRatioConverter.resetWithNewRange(
+        mMotionEventToZoomRatioConverter.reset(mLocalFgService.getZoomRatio(),
                 mLocalFgService.getCameraInfo().getZoomRatioRange());
+        updateZoomText(mLocalFgService.getZoomRatio());
+    }
+
+    private void updateZoomText(float zoomRatio) {
+        mZoomRatioTextView.setText(getString(R.string.zoom_ratio, zoomRatio));
     }
 }
