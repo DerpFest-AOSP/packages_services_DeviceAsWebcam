@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2023 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_label" msgid="5899561994441982117">"Serbisyo ng Webcam"</string>
+    <string name="view_finder_description" msgid="5377029921915271921">"View finder"</string>
+    <string name="zoom_ratio_description" msgid="9107687666892253315">"Value ng ratio ng zoom"</string>
+    <string name="zoom_ratio" msgid="4200609290600553218">"%.2fx"</string>
+    <string name="toggle_camera_button_description" msgid="2694127807599412346">"Button ng i-toggle ang direksyon ng camera"</string>
+    <string name="notif_channel_name" msgid="9012392302161214874">"Serbisyo sa Foreground"</string>
+    <string name="notif_ticker" msgid="2469430372083539460">"Device bilang Webcam"</string>
+    <string name="notif_title" msgid="8586464138692482711">"Device bilang Webcam"</string>
+    <string name="notif_desc" msgid="3401500766419595945">"I-tap para i-configure ang Webcam"</string>
+</resources>
