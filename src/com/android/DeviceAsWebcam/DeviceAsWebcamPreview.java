@@ -79,27 +79,30 @@ public class DeviceAsWebcamPreview extends Activity {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture texture, int width,
                         int height) {
-                    if (VERBOSE) {
-                        Log.v(TAG, "onSurfaceTextureAvailable " + width + " x " + height);
-                    }
-                    mServiceReady.block();
-
-                    if (!mTextureViewSetup) {
-                        setupTextureViewLayout();
-                    }
-                    if (mLocalFgService != null) {
-                        mLocalFgService.setOnDestroyedCallback(() -> onServiceDestroyed());
-                        mLocalFgService.setPreviewSurfaceTexture(texture);
-                        if (mLocalFgService.canToggleCamera()) {
-                            mToggleCameraButton.setVisibility(View.VISIBLE);
-                            mToggleCameraButton.setOnClickListener(v -> toggleCamera());
-                        } else {
-                            mToggleCameraButton.setVisibility(View.GONE);
+                    runOnUiThread(() -> {
+                        if (VERBOSE) {
+                            Log.v(TAG, "onSurfaceTextureAvailable " + width + " x " + height);
                         }
-                        rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
-                        mLocalFgService.setRotationUpdateListener(
-                                rotation -> rotateUiByRotationDegrees(rotation));
-                    }
+                        mServiceReady.block();
+
+                        if (!mTextureViewSetup) {
+                            setupTextureViewLayout();
+                        }
+                        if (mLocalFgService != null) {
+                            mLocalFgService.setOnDestroyedCallback(() -> onServiceDestroyed());
+                            mLocalFgService.setPreviewSurfaceTexture(texture);
+                            if (mLocalFgService.canToggleCamera()) {
+                                mToggleCameraButton.setVisibility(View.VISIBLE);
+                                mToggleCameraButton.setOnClickListener(v -> toggleCamera());
+                            } else {
+                                mToggleCameraButton.setVisibility(View.GONE);
+                            }
+                            rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
+                            mLocalFgService.setRotationUpdateListener(
+                                    rotation -> runOnUiThread(
+                                            () -> rotateUiByRotationDegrees(rotation)));
+                        }
+                    });
                 }
 
                 @Override
@@ -112,9 +115,11 @@ public class DeviceAsWebcamPreview extends Activity {
 
                 @Override
                 public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
-                    if (mLocalFgService != null) {
-                        mLocalFgService.removePreviewSurfaceTexture();
-                    }
+                    runOnUiThread(() -> {
+                        if (mLocalFgService != null) {
+                            mLocalFgService.removePreviewSurfaceTexture();
+                        }
+                    });
                     return true;
                 }
 
@@ -135,8 +140,12 @@ public class DeviceAsWebcamPreview extends Activity {
 
         @Override
         public void onServiceDisconnected(ComponentName className) {
-            mLocalFgService = null;
-            runOnUiThread(() -> finish());
+            // Serialize updating mLocalFgService on UI Thread as all consumers of mLocalFgService
+            // run on the UI Thread.
+            runOnUiThread(() -> {
+                mLocalFgService = null;
+                finish();
+            });
         }
     };
 
@@ -211,6 +220,10 @@ public class DeviceAsWebcamPreview extends Activity {
     private void rotateUiByRotationDegrees(int rotation) {
         // Rotates the UI control container according to the device sensor rotation degrees and the
         // camera sensor orientation.
+        if (mLocalFgService == null) {
+            // Don't do anything if no foreground service is connected
+            return;
+        }
         int sensorOrientation = mLocalFgService.getCameraInfo().getSensorOrientation();
         if (mLocalFgService.getCameraInfo().getLensFacing()
                 == CameraCharacteristics.LENS_FACING_BACK) {
@@ -316,7 +329,8 @@ public class DeviceAsWebcamPreview extends Activity {
             if (mLocalFgService != null) {
                 mLocalFgService.setPreviewSurfaceTexture(mTextureView.getSurfaceTexture());
                 rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
-                mLocalFgService.setRotationUpdateListener(this::rotateUiByRotationDegrees);
+                mLocalFgService.setRotationUpdateListener(rotation ->
+                        runOnUiThread(() -> rotateUiByRotationDegrees(rotation)));
                 updateZoomText(mLocalFgService.getZoomRatio());
             }
         } else {
