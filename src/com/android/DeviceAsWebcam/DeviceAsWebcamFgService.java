@@ -36,6 +36,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 import com.android.DeviceAsWebcam.annotations.UsedByNative;
+import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
 
 import java.lang.ref.WeakReference;
 import java.util.Objects;
@@ -127,7 +128,8 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     private int setupServicesAndStartListening() {
-        return setupServicesAndStartListeningNative();
+        String[] ignoredNodes = IgnoredV4L2Nodes.getIgnoredNodes(getApplicationContext());
+        return setupServicesAndStartListeningNative(ignoredNodes);
     }
 
     @Override
@@ -387,17 +389,19 @@ public class DeviceAsWebcamFgService extends Service {
 
     /**
      * Called by {@link DeviceAsWebcamReceiver} to check if the service should be started.
+     * @param ignoredNodes V4L2 nodes to ignore
      * @return {@code true} if the foreground service should be started,
      *         {@code false} if the service is already running or should not be started
      */
-    public static native boolean shouldStartServiceNative();
+    public static native boolean shouldStartServiceNative(String[] ignoredNodes);
 
     /**
      * Called during {@link #onStartCommand} to initialize the native side of the service.
+     * @param ignoredNodes V4L2 nodes to ignore
      * @return 0 if native side code was successfully initialized,
      *         non-0 otherwise
      */
-    private native int setupServicesAndStartListeningNative();
+    private native int setupServicesAndStartListeningNative(String[] ignoredNodes);
 
     /**
      * Called by {@link CameraController} to queue frames for encoding. The frames are encoded
