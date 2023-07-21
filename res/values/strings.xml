@@ -14,8 +14,8 @@
      limitations under the License.
 -->
 
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <!-- App title of DeviceAsWebcam [CHAR LIMIT=32] -->
+<resources>
+    <!-- App title of DeviceAsWebcam -->
     <string name="app_label">Webcam Service</string>
     <!-- Accessibility description for the view finder texture view -->
     <string name="view_finder_description">View finder</string>
@@ -29,4 +29,9 @@
     <string name="notif_ticker">Device as Webcam</string>
     <string name="notif_title">Device as Webcam</string>
     <string name="notif_desc">Tap to configure Webcam</string>
+
+    <!-- Strings for reading/writing user preferences to SharedPreferences -->
+    <string name="prefs_file_name">com.android.DeviceAsWebcam.user.prefs</string>
+    <string name="prefs_camera_id_key">camera.id</string>
+    <string name="prefs_zoom_ratio_key">zoom.ratio.%s</string>
 </resources>

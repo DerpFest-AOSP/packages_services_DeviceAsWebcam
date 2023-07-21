@@ -19,11 +19,10 @@ package com.android.DeviceAsWebcam;
 import android.annotation.IntRange;
 import android.content.Context;
 import android.hardware.SensorManager;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.display.DisplayManager;
-import android.util.Log;
 import android.view.Display;
 import android.view.OrientationEventListener;
-import android.view.Surface;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,6 +59,8 @@ public final class RotationProvider {
     private int mRotation;
     private int mSensorOrientation;
 
+    private int mLastDisplayOrientation;
+
     /**
      * Creates a new RotationProvider.
      *
@@ -67,11 +68,16 @@ public final class RotationProvider {
      *                           {@link OrientationEventListener} or get display rotation.
      * @param sensorOrientation  the camera sensor orientation value
      */
-    public RotationProvider(Context applicationContext, int sensorOrientation) {
-        int displayRotation = applicationContext.getSystemService(DisplayManager.class).getDisplay(
-                Display.DEFAULT_DISPLAY).getRotation();
-        mRotation = displayRotation == Surface.ROTATION_270 ? 180 : 0;
-        mSensorOrientation = sensorOrientation;
+    public RotationProvider(Context applicationContext, int sensorOrientation, int lensFacing) {
+        mLastDisplayOrientation = applicationContext.getSystemService(DisplayManager.class)
+                .getDisplay(Display.DEFAULT_DISPLAY).getRotation();
+
+        // sensor orientation is reported as the clockwise rotation needed for back camera, and
+        // counter clockwise rotation needed for front camera. For consistent logic, always track
+        // clockwise rotation needed in mSensorOrientation.
+        mSensorOrientation = lensFacing == CameraCharacteristics.LENS_FACING_FRONT ?
+                (360 - sensorOrientation) : sensorOrientation;
+        mRotation = sensorOrientationToRotationDegrees(mLastDisplayOrientation);
         mOrientationListener = new OrientationEventListener(applicationContext) {
             @Override
             public void onOrientationChanged(int orientation) {
@@ -86,6 +92,7 @@ public final class RotationProvider {
                 List<ListenerWrapper> listeners = new ArrayList<>();
                 // Take a snapshot for thread safety.
                 synchronized (mLock) {
+                    mLastDisplayOrientation = orientation;
                     newRotation = sensorOrientationToRotationDegrees(orientation);
                     originalRotation = mRotation;
                     if (mRotation != newRotation) {
@@ -143,6 +150,19 @@ public final class RotationProvider {
             if (mListeners.isEmpty()) {
                 mOrientationListener.disable();
             }
+        }
+    }
+
+    public void updateSensorOrientation(int sensorOrientation, int lensFacing) {
+        synchronized (mLock) {
+            // sensor orientation is reported as the clockwise rotation needed for back camera, and
+            // counter clockwise rotation needed for front camera. For consistent logic, always
+            // track clockwise rotation needed in mSensorOrientation.
+            mSensorOrientation = lensFacing == CameraCharacteristics.LENS_FACING_FRONT ?
+                    (360 - sensorOrientation) : sensorOrientation;
+
+            // Fire callbacks with the new rotation
+            mOrientationListener.onOrientationChanged(mLastDisplayOrientation);
         }
     }
 
