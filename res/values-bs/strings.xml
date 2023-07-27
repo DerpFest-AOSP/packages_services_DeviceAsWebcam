@@ -25,4 +25,7 @@
     <string name="notif_ticker" msgid="2469430372083539460">"Uređaj kao web kamera"</string>
     <string name="notif_title" msgid="8586464138692482711">"Uređaj kao web kamera"</string>
     <string name="notif_desc" msgid="3401500766419595945">"Dodirnite da konfigurirate web kameru"</string>
+    <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
+    <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
+    <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
 </resources>
