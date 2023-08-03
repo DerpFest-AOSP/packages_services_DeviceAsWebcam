@@ -22,4 +22,10 @@
     <color name="ripple">@android:color/system_accent1_600</color>
     <color name="bg">@android:color/system_neutral2_900</color>
     <color name="button">@android:color/system_accent1_400</color>
+
+    <color name="zoom_knob_background_color">@android:color/system_accent1_400</color>
+    <color name="zoom_seek_bar_background_color">#DB222222</color>
+    <color name="zoom_seek_bar_stroke_color">#80FFFFFF</color>
+    <color name="zoom_toggle_button_background_color">@android:color/system_accent1_400</color>
+    <color name="zoom_ui_toggle_bar_text_color">#FFFFFF</color>
 </resources>
