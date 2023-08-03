@@ -253,10 +253,16 @@ public class CameraController {
 
     private CameraInfo createCameraInfo(String cameraId,
             List<VendorCameraPrefs.PhysicalCameraInfo> physicalInfos) {
+        String workingCameraId =
+                (physicalInfos != null && !physicalInfos.isEmpty()) ? physicalInfos.get(
+                        0).physicalCameraId : cameraId;
         return cameraId == null ? null : new CameraInfo(
                 getCameraCharacteristic(cameraId, CameraCharacteristics.LENS_FACING),
                 getCameraCharacteristic(cameraId, CameraCharacteristics.SENSOR_ORIENTATION),
-                getCameraCharacteristic(cameraId, CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE),
+                // TODO: b/269644311 Need to find a way to correct the available zoom ratio range
+                //  when a specific physical camera is used.
+                getCameraCharacteristic(workingCameraId,
+                        CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE),
                 physicalInfos
         );
     }
