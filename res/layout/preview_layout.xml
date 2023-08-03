@@ -69,17 +69,18 @@
             android:visibility="visible"
             android:background="@drawable/ic_camera_switch_bg"/>
 
-        <TextView
-            android:id="@+id/zoom_ratio_text_view"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/zoom_ui_container"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:textSize="32sp"
-            android:contentDescription="@string/zoom_ratio_description"
-            app:layout_constraintTop_toTopOf="parent"
+            android:layout_height="match_parent"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/toggle_camera_button"/>
-
+            app:layout_constraintEnd_toStartOf="@id/toggle_camera_button">
+            <com.android.DeviceAsWebcam.view.ZoomController
+                android:id="@+id/zoom_ui_controller"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
