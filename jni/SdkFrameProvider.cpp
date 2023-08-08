@@ -79,7 +79,7 @@ Status SdkFrameProvider::getHardwareBufferDescFromHardwareBuffer(AHardwareBuffer
     AHardwareBuffer_Planes planes{};
     if (AHardwareBuffer_lockPlanes(hardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
                                    /*fence*/ -1, /*rect*/ nullptr, &planes) != 0) {
-        ALOGE("Couldn't get hardware buffer planes from hardware buffer");
+        ALOGE("%s: Couldn't get hardware buffer planes from hardware buffer", __FUNCTION__);
         AHardwareBuffer_release(hardwareBuffer);
         return Status::ERROR;
     }
@@ -88,28 +88,40 @@ Status SdkFrameProvider::getHardwareBufferDescFromHardwareBuffer(AHardwareBuffer
 
     uint32_t height = desc.height;
     uint32_t width = desc.width;
-    ret.yData = (uint8_t*)planes.planes[0].data;
-    ret.yDataLength = planes.planes[0].rowStride * (height - 1) + width;
-    ret.yRowStride = planes.planes[0].rowStride;
+    ret.format = desc.format;
+    ret.width = width;
+    ret.height = height;
 
-    ret.uData = (uint8_t*)planes.planes[1].data;
-    ret.uDataLength = planes.planes[1].rowStride * (height / 2 - 1) +
-                      (planes.planes[1].pixelStride * width / 2 - 1) + 1;
-    ret.uRowStride = planes.planes[1].rowStride;
+    if (ret.format == AHARDWAREBUFFER_FORMAT_Y8Cb8Cr8_420) {
+      YuvHardwareBufferDesc yuvDesc;
+      yuvDesc.yData = (uint8_t*) planes.planes[0].data;
+      yuvDesc.yDataLength = planes.planes[0].rowStride * (height - 1) + width;
+      yuvDesc.yRowStride = planes.planes[0].rowStride;
 
-    ret.vData = (uint8_t*)planes.planes[2].data;
-    ret.vDataLength = planes.planes[2].rowStride * (height / 2 - 1) +
-                      (planes.planes[2].pixelStride * width / 2 - 1) + 1;
-    ret.vRowStride = planes.planes[2].rowStride;
+      yuvDesc.uData = (uint8_t*) planes.planes[1].data;
+      yuvDesc.uDataLength = planes.planes[1].rowStride * (height / 2 - 1) +
+          (planes.planes[1].pixelStride * width / 2 - 1) + 1;
+      yuvDesc.uRowStride = planes.planes[1].rowStride;
 
-    // Pixel stride is the same for u and v planes
-    ret.uvPixelStride = planes.planes[1].pixelStride;
+      yuvDesc.vData = (uint8_t*) planes.planes[2].data;
+      yuvDesc.vDataLength = planes.planes[2].rowStride * (height / 2 - 1) +
+          (planes.planes[2].pixelStride * width / 2 - 1) + 1;
+      yuvDesc.vRowStride = planes.planes[2].rowStride;
+
+      // Pixel stride is the same for u and v planes
+      yuvDesc.uvPixelStride = planes.planes[1].pixelStride;
+      ret.bufferDesc = yuvDesc;
+    } else if(ret.format == AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM) {
+        ARGBHardwareBufferDesc argbDesc;
+        argbDesc.buf =  (uint8_t*) planes.planes[0].data;
+        argbDesc.rowStride =   planes.planes[0].rowStride;
+        ret.bufferDesc = argbDesc;
+    }
     {
         std::lock_guard<std::mutex> l(mMapLock);
         ret.bufferId = mNextBufferId++;
         mBufferIdToAHardwareBuffer[ret.bufferId] = hardwareBuffer;
     }
-
     return Status::OK;
 }
 

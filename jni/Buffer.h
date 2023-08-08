@@ -25,6 +25,7 @@
 #include <map>
 #include <mutex>
 #include <queue>
+#include <variant>
 #include <vector>
 
 namespace android {
@@ -34,7 +35,7 @@ enum BufferType {
     V4L2 = 0,
 };
 
-struct HardwareBufferDesc {
+struct YuvHardwareBufferDesc {
     uint8_t* yData = nullptr;
     uint32_t yDataLength = 0;
     uint32_t yRowStride = 0;
@@ -48,7 +49,19 @@ struct HardwareBufferDesc {
     uint32_t vRowStride = 0;
 
     uint32_t uvPixelStride = 0;
+};
+
+struct ARGBHardwareBufferDesc {
+    uint8_t *buf = nullptr;
+    uint32_t rowStride = 0;
+};
+
+struct HardwareBufferDesc {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t format = 0;
     uint32_t bufferId = 0;
+    std::variant<ARGBHardwareBufferDesc, YuvHardwareBufferDesc> bufferDesc;
 };
 
 class BufferManager;
