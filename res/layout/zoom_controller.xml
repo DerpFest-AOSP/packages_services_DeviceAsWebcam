@@ -51,6 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
+            android:textColor="@color/zoom_ui_toggle_bar_text_color"
             android:background="@drawable/ic_zoom_ui_knob_bg"
             android:visibility="gone" />
         <ImageView
