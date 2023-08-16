@@ -27,9 +27,9 @@
     <string name="toggle_camera_button_description">Toggle camera direction</string>
     <!-- Notification  -->
     <string name="notif_channel_name">Foreground Service</string>
-    <string name="notif_ticker">Device as Webcam</string>
-    <string name="notif_title">Device as Webcam</string>
-    <string name="notif_desc">Tap to configure Webcam</string>
+    <string name="notif_ticker">Webcam</string>
+    <string name="notif_title">Webcam</string>
+    <string name="notif_desc">Tap to preview and configure webcam output</string>
 
     <!-- Strings for reading/writing user preferences to SharedPreferences -->
     <string name="prefs_file_name">com.android.DeviceAsWebcam.user.prefs</string>
