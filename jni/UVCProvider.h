@@ -27,6 +27,7 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <unordered_set>
 
 namespace android {
 namespace webcam {
@@ -95,14 +96,14 @@ struct FormatTriplet {
 // This class manages all things related to UVC event handling.
 class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
   public:
-    static std::string getVideoNode();
+    static std::string getVideoNode(const std::unordered_set<std::string>& ignoredNodes);
 
     UVCProvider() = default;
     ~UVCProvider();
 
     Status init();
     // Start listening for UVC events
-    Status startService();
+    Status startService(const std::unordered_set<std::string>& ignoredNodes);
 
     void stopService();
 
@@ -116,7 +117,8 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
     // for probing and committing controls.
     class UVCDevice : public BufferCreatorAndDestroyer {
       public:
-        explicit UVCDevice(std::weak_ptr<UVCProvider> parent);
+        explicit UVCDevice(std::weak_ptr<UVCProvider> parent,
+                           const std::unordered_set<std::string>& ignoredNodes);
         ~UVCDevice() override = default;
         void closeUVCFd();
         [[nodiscard]] bool isInited() const;
