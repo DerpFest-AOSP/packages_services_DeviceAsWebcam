@@ -23,6 +23,8 @@ import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
+
 public class DeviceAsWebcamReceiver extends BroadcastReceiver {
     private static final String TAG = DeviceAsWebcamReceiver.class.getSimpleName();
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
@@ -45,7 +47,8 @@ public class DeviceAsWebcamReceiver extends BroadcastReceiver {
             return;
         }
         if (UsbManager.ACTION_USB_STATE.equals(action) && uvcSelected) {
-            if (!DeviceAsWebcamFgService.shouldStartServiceNative()) {
+            String[] ignoredNodes = IgnoredV4L2Nodes.getIgnoredNodes(context);
+            if (!DeviceAsWebcamFgService.shouldStartServiceNative(ignoredNodes)) {
                 if (VERBOSE) {
                     Log.v(TAG, "Shouldn't start service so returning");
                 }

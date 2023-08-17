@@ -281,14 +281,15 @@ std::shared_ptr<UVCProperties> UVCProvider::UVCDevice::parseUvcProperties() {
     return ret;
 }
 
-UVCProvider::UVCDevice::UVCDevice(std::weak_ptr<UVCProvider> parent) {
+UVCProvider::UVCDevice::UVCDevice(std::weak_ptr<UVCProvider> parent,
+                                  const std::unordered_set<std::string>& ignoredNodes) {
     mParent = std::move(parent);
 
     // Initialize probe and commit controls with default values
     FormatTriplet defaultFormatTriplet(/*formatIndex*/ 1, /*frameSizeIndex*/ 1,
                                        /*frameInterval*/ 0);
 
-    mVideoNode = getVideoNode();
+    mVideoNode = getVideoNode(ignoredNodes);
 
     if (mVideoNode.empty()) {
         ALOGE("%s: mVideoNode is empty, what ?", __FUNCTION__);
@@ -317,14 +318,19 @@ void UVCProvider::UVCDevice::closeUVCFd() {
     mUVCFd.reset();
 }
 
-std::string UVCProvider::getVideoNode() {
+std::string UVCProvider::getVideoNode(const std::unordered_set<std::string>& ignoredNodes) {
     std::string devNode;
     ALOGV("%s start scanning for existing V4L2 OUTPUT devices", __FUNCTION__);
     glob_t globRes;
     glob(kDeviceGlobPattern, /*flags*/ 0, /*error_callback*/ nullptr, &globRes);
     for (unsigned int i = 0; i < globRes.gl_pathc; ++i) {
-        ALOGV("%s file: %s", __FUNCTION__, globRes.gl_pathv[i]);
-        if (isVideoOutputDevice(globRes.gl_pathv[i])) {
+        auto& node = globRes.gl_pathv[i];
+        ALOGV("%s file: %s", __FUNCTION__, node);
+
+        // Skip if the node should be ignored
+        if (ignoredNodes.find(node) != ignoredNodes.end()) { continue; }
+
+        if (isVideoOutputDevice(node)) {
             devNode = globRes.gl_pathv[i];
             break;
         }
@@ -851,13 +857,13 @@ void UVCProvider::stopAndWaitForUVCListenerThread() {
     }
 }
 
-Status UVCProvider::startService() {
+Status UVCProvider::startService(const std::unordered_set<std::string>& ignoredNodes) {
     // Resets old state for epoll since this is a new start for the service.
     mEpollW.init();
     if (mUVCDevice != nullptr) {
         mUVCDevice->closeUVCFd();
     }
-    mUVCDevice = std::make_shared<UVCDevice>(shared_from_this());
+    mUVCDevice = std::make_shared<UVCDevice>(shared_from_this(), ignoredNodes);
     if (!mUVCDevice->isInited()) {
         return Status::ERROR;
     }
