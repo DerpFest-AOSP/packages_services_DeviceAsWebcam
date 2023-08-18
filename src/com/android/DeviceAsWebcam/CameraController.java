@@ -27,6 +27,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -277,7 +278,9 @@ public class CameraController {
                 //  when a specific physical camera is used.
                 getCameraCharacteristic(workingCameraId,
                         CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE),
-                physicalInfos
+                physicalInfos,
+                getCameraCharacteristic(cameraId,
+                        CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
         );
     }
 
@@ -343,30 +346,63 @@ public class CameraController {
 
     private void setupPreviewOnlyStreamLocked(Surface previewSurface) {
         mPreviewSurface = previewSurface;
+        openCameraBlocking();
+        mPreviewRequestBuilder = createInitialPreviewRequestBuilder(mPreviewSurface);
+        if (mPreviewRequestBuilder == null) {
+            return;
+        }
+        mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
+        // So that we don't have to reconfigure if / when the preview activity is turned off /
+        // on again.
+        mOutputConfigurations = Arrays.asList(mPreviewOutputConfiguration);
+        createCaptureSessionBlocking();
+        mCurrentState = PREVIEW_STREAMING;
+    }
+
+    private CaptureRequest.Builder createInitialPreviewRequestBuilder(Surface targetSurface) {
+        CaptureRequest.Builder captureRequestBuilder;
         try {
-            openCameraBlocking();
-            mPreviewRequestBuilder =
+            captureRequestBuilder =
                     mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-
-            Range<Integer> fpsRange;
-            if (mFps != 0) {
-                fpsRange = new Range<>(mFps, mFps);
-            } else {
-                fpsRange = new Range<>(30, 30);
-            }
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, mZoomRatio);
-            mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
-            mPreviewRequestBuilder.addTarget(mPreviewSurface);
-            // So that we don't have to reconfigure if / when the preview activity is turned off /
-            // on again.
-
-            mOutputConfigurations = Arrays.asList(mPreviewOutputConfiguration);
-            createCaptureSessionBlocking();
-            mCurrentState = PREVIEW_STREAMING;
         } catch (CameraAccessException e) {
             Log.e(TAG, "createCaptureRequest failed", e);
+            return null;
         }
+
+        Range<Integer> fpsRange;
+        if (mFps != 0) {
+            fpsRange = new Range<>(mFps, mFps);
+        } else {
+            fpsRange = new Range<>(30, 30);
+        }
+        captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+        captureRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, mZoomRatio);
+        captureRequestBuilder.addTarget(targetSurface);
+        captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+        if (isFacePrioritySupported()) {
+            captureRequestBuilder.set(CaptureRequest.CONTROL_SCENE_MODE,
+                    CaptureRequest.CONTROL_SCENE_MODE_FACE_PRIORITY);
+        }
+
+        return captureRequestBuilder;
+    }
+
+    private boolean isFacePrioritySupported() {
+        int[] availableSceneModes = getCameraCharacteristic(mCameraId,
+                CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES);
+
+        if (availableSceneModes == null) {
+            return false;
+        }
+
+        for (int availableSceneMode : availableSceneModes) {
+            if (availableSceneMode == CaptureRequest.CONTROL_SCENE_MODE_FACE_PRIORITY) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void setupPreviewStreamAlongsideWebcamStreamLocked(
@@ -421,22 +457,16 @@ public class CameraController {
             Log.v(TAG, "setupWebcamOnly");
         }
         Surface surface = mImgReader.getSurface();
-        try {
-            openCameraBlocking();
-            mPreviewRequestBuilder =
-                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            Range<Integer> fpsRange = new Range<>(mFps, mFps);
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, mZoomRatio);
-            mPreviewRequestBuilder.addTarget(surface);
-            mWebcamOutputConfiguration = new OutputConfiguration(surface);
-            mOutputConfigurations =
-                    Arrays.asList(mWebcamOutputConfiguration);
-            createCaptureSessionBlocking();
-            mCurrentState = WEBCAM_STREAMING;
-        } catch (CameraAccessException e) {
-            Log.e(TAG, "createCaptureRequest failed", e);
+        openCameraBlocking();
+        mPreviewRequestBuilder = createInitialPreviewRequestBuilder(surface);
+        if (mPreviewRequestBuilder == null) {
+            Log.e(TAG, "Failed to create the webcam stream.");
+            return;
         }
+        mWebcamOutputConfiguration = new OutputConfiguration(surface);
+        mOutputConfigurations = Arrays.asList(mWebcamOutputConfiguration);
+        createCaptureSessionBlocking();
+        mCurrentState = WEBCAM_STREAMING;
     }
 
     private void setupWebcamStreamAndReconfigureSessionLocked() {
@@ -813,6 +843,81 @@ public class CameraController {
 
         Log.d(TAG, "Suitable preview size is " + previewSize);
         return previewSize;
+    }
+
+    /**
+     * Trigger tap-to-focus operation for the specified metering rectangles.
+     *
+     * <p>The specified metering rectangles will be applied for AF, AE and AWB.
+     */
+    public void tapToFocus(MeteringRectangle[] meteringRectangles) {
+        mServiceEventsExecutor.execute(() -> {
+            synchronized (mSerializationLock) {
+                if (mCameraDevice == null || mCaptureSession == null) {
+                    return;
+                }
+
+                try {
+                    // Updates the metering rectangles to the repeating request
+                    updateTapToFocusParameters(mPreviewRequestBuilder, meteringRectangles,
+                            /* afTriggerStart */ false);
+                    mCaptureSession.setSingleRepeatingRequest(mPreviewRequestBuilder.build(),
+                            mCameraCallbacksExecutor, mCaptureCallback);
+
+                    // Creates a capture request to trigger AF start for the metering rectangles.
+                    CaptureRequest.Builder builder = mCameraDevice.createCaptureRequest(
+                            CameraDevice.TEMPLATE_PREVIEW);
+                    CaptureRequest previewCaptureRequest = mPreviewRequestBuilder.build();
+
+                    for (CaptureRequest.Key<?> key : previewCaptureRequest.getKeys()) {
+                        builder.set((CaptureRequest.Key) key, previewCaptureRequest.get(key));
+                    }
+
+                    if (mImgReader != null && previewCaptureRequest.containsTarget(
+                            mImgReader.getSurface())) {
+                        builder.addTarget(mImgReader.getSurface());
+                    }
+
+                    if (mPreviewSurface != null && previewCaptureRequest.containsTarget(
+                            mPreviewSurface)) {
+                        builder.addTarget(mPreviewSurface);
+                    }
+
+                    updateTapToFocusParameters(builder, meteringRectangles,
+                            /* afTriggerStart */ true);
+
+                    mCaptureSession.captureSingleRequest(builder.build(),
+                            mCameraCallbacksExecutor, mCaptureCallback);
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Failed to execute tap-to-focus to the working camera.", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Updates tap-to-focus parameters to the capture request builder.
+     *
+     * @param builder            the capture request builder to apply the parameters
+     * @param meteringRectangles the metering rectangles to apply to the capture request builder
+     * @param afTriggerStart     sets CONTROL_AF_TRIGGER as CONTROL_AF_TRIGGER_START if this
+     *                           parameter is {@code true}. Otherwise, sets nothing to
+     *                           CONTROL_AF_TRIGGER.
+     */
+    private void updateTapToFocusParameters(CaptureRequest.Builder builder,
+            MeteringRectangle[] meteringRectangles, boolean afTriggerStart) {
+        builder.set(CaptureRequest.CONTROL_AF_REGIONS, meteringRectangles);
+        builder.set(CaptureRequest.CONTROL_AF_MODE,
+                CaptureRequest.CONTROL_AF_MODE_AUTO);
+        builder.set(CaptureRequest.CONTROL_AE_REGIONS, meteringRectangles);
+        builder.set(CaptureRequest.CONTROL_AE_MODE,
+                CaptureRequest.CONTROL_AE_MODE_ON);
+        builder.set(CaptureRequest.CONTROL_AWB_REGIONS, meteringRectangles);
+
+        if (afTriggerStart) {
+            builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                    CaptureRequest.CONTROL_AF_TRIGGER_START);
+        }
     }
 
     private static class ImageAndBuffer {
