@@ -827,7 +827,7 @@ void UVCProvider::ListenToUVCFds() {
                 } else {
                     ALOGW("mUVCDevice is null we've disconnected");
                 }
-            } else {
+            } else if (!(event.events & EPOLLPRI)){
                 ALOGW("Which event fd is %d ? event %u", event.data.fd, event.events);
             }
         }
