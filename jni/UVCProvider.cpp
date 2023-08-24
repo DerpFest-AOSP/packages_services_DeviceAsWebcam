@@ -17,7 +17,6 @@
 //#define LOG_NDEBUG 0
 
 #include <jni.h>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <utility>
@@ -27,6 +26,7 @@
 #include <linux/usb/g_uvc.h>
 #include <linux/usb/video.h>
 #include <sys/epoll.h>
+#include <sys/inotify.h>
 #include <sys/mman.h>
 
 #include <DeviceAsWebcamNative.h>
@@ -122,6 +122,26 @@ Status UVCProvider::UVCDevice::openV4L2DeviceAndSubscribe(const std::string& vid
 
     ALOGI("%s Start to listen to device fd %d", __FUNCTION__, fd);
     mUVCFd.reset(fd);
+
+    // Set up inotify to watch for V4L2 node removal before before setting up anything else.
+    int inotifyFd = inotify_init();
+    if (inotifyFd < 0) {
+        ALOGE("%s: Couldn't create an inotify fd. Error(%d): %s", __FUNCTION__,
+              errno, strerror(errno));
+        return Status::ERROR;
+    }
+    mINotifyFd.reset(inotifyFd);
+    // Watch for IN_ATTRIB which is returned on link/unlink among other things.
+    // As the videoNode is already linked, this should only be called during unlink.
+    // NOTE: We don't watch for IN_DELETE_SELF because it isn't triggered when the
+    // V4L2 node is removed.
+    int ret = inotify_add_watch(inotifyFd, videoNode.c_str(), IN_ATTRIB);
+    if (ret < 0) {
+        ALOGE("%s: Couldn't add watch for %s. Error(%d): %s", __FUNCTION__, videoNode.c_str(),
+              errno, strerror(errno));
+        return Status::ERROR;
+    }
+
     memset(&cap, 0, sizeof(cap));
 
     if (ioctl(mUVCFd.get(), VIDIOC_QUERYCAP, &cap) < 0) {
@@ -306,6 +326,8 @@ UVCProvider::UVCDevice::UVCDevice(std::weak_ptr<UVCProvider> parent,
 }
 
 void UVCProvider::UVCDevice::closeUVCFd() {
+    mINotifyFd.reset(); // No need to inotify_rm_watch as closing the fd frees up resources
+
     if (mUVCFd.get() >= 0) {
         struct v4l2_event_subscription subscription {};
         subscription.type = V4L2_EVENT_ALL;
@@ -722,9 +744,11 @@ UVCProvider::~UVCProvider() {
     }
 
     if (mUVCDevice) {
-        int fd = mUVCDevice->getUVCFd();
-        if (fd >= 0) {
-            mEpollW.remove(fd);
+        if (mUVCDevice->getUVCFd() >= 0) {
+            mEpollW.remove(mUVCDevice->getUVCFd());
+        }
+        if (mUVCDevice->getINotifyFd() >= 0) {
+            mEpollW.remove(mUVCDevice->getINotifyFd());
         }
     }
     mUVCDevice = nullptr;
@@ -810,28 +834,72 @@ void UVCProvider::watchStreamEvent() {
 
 void UVCProvider::ListenToUVCFds() {
     // For UVC events
-    ALOGI("%s Start to listen to device fd %d", __FUNCTION__, mUVCDevice->getUVCFd());
+    ALOGI("%s Start to listen to device fd %d and inotify_fd %d", __FUNCTION__,
+          mUVCDevice->getUVCFd(), mUVCDevice->getINotifyFd());
+
+    // Listen to inotify events for node removal
+    mEpollW.add(mUVCDevice->getINotifyFd(), EPOLLIN);
+    // Listen to V4L2 events
     mEpollW.add(mUVCDevice->getUVCFd(), EPOLLPRI);
     // For stream events : dequeue and queue buffers
     while (mListenToUVCFds) {
         Events events = mEpollW.waitForEvents();
         for (auto event : events) {
-            // Priority event might come with regular events, so one event could have both
-            if (event.events & EPOLLPRI) {
-                processUVCEvent();
-            }
-
-            if (event.events & EPOLLOUT) {
-                if (mUVCDevice != nullptr) {
-                    mUVCDevice->processStreamEvent();
-                } else {
-                    ALOGW("mUVCDevice is null we've disconnected");
+            if (mUVCDevice->getINotifyFd() == event.data.fd && (event.events & EPOLLIN)) {
+                // File system event on the V4L2 node
+                if (processINotifyEvent()) {
+                    break; // Stop handling current events if the service was stopped.
                 }
-            } else if (!(event.events & EPOLLPRI)){
-                ALOGW("Which event fd is %d ? event %u", event.data.fd, event.events);
+            } else {
+                // V4L2 event
+                // Priority event might come with regular events, so one event could have both
+                if (event.events & EPOLLPRI) {
+                    processUVCEvent();
+                }
+
+                if (event.events & EPOLLOUT) {
+                    if (mUVCDevice != nullptr) {
+                        mUVCDevice->processStreamEvent();
+                    } else {
+                        ALOGW("mUVCDevice is null we've disconnected");
+                    }
+                } else if (!(event.events & EPOLLPRI)) {
+                    ALOGW("Which event fd is %d ? event %u", event.data.fd, event.events);
+                }
             }
         }
     }
+}
+
+bool UVCProvider::processINotifyEvent() {
+    // minimum size to read one event fully
+    ALOGV("%s: Processing inotify event", __FUNCTION__);
+    constexpr size_t BUF_SIZE = sizeof(struct inotify_event) + NAME_MAX + 1;
+    char buf[BUF_SIZE];
+    int len = 0;
+    while ((len = read(mUVCDevice->getINotifyFd(), buf, BUF_SIZE)) >= 0) {
+        for (int i = 0; i < len;) {
+            struct inotify_event* event = reinterpret_cast<inotify_event*>(&buf[i]);
+            i += sizeof(struct inotify_event) + event->len;
+
+            ALOGV("%s: Read inotify_event: wd(%d); mask(%u); cookie(%u); len(%u); name(%s)",
+                  __FUNCTION__, event->wd, event->mask, event->cookie, event->cookie,
+                  &event->name[0]);
+
+            // Make sure the V4L2 node is actually removed before stopping service.
+            if ((event->mask & IN_ATTRIB) && access(mUVCDevice->getCurrentVideoNode(), F_OK)) {
+                // V4L2 node unlinked. Stop service as "UVC_EVENT_DISCONNECT" won't be coming in
+                // anymore.
+                ALOGW("%s: V4L2 node removed without UVC_EVENT_DISCONNECT. Stopping Service.",
+                      __FUNCTION__);
+                stopService();
+                return true;
+            }
+        }
+    }
+    ALOGV("%s: Could not read from inotify_fd(%d). Error(%d): %s", __FUNCTION__,
+          mUVCDevice->getINotifyFd(), errno, strerror(errno));
+    return false;
 }
 
 int UVCProvider::encodeImage(AHardwareBuffer* buffer, long timestamp, int rotation) {
@@ -876,6 +944,7 @@ void UVCProvider::stopService() {
     // TODO: Try removing this
     mUVCDevice->processStreamOffEvent();
     mEpollW.remove(mUVCDevice->getUVCFd());
+    mEpollW.remove(mUVCDevice->getINotifyFd());
     // Signal the service to stop.
     // UVC Provider will get destructed when the Java Service is destroyed.
     DeviceAsWebcamServiceManager::kInstance->stopService();
