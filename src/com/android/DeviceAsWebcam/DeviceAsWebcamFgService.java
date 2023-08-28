@@ -27,7 +27,6 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
-import android.hardware.camera2.params.MeteringRectangle;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
@@ -448,15 +447,46 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     /**
-     * Trigger tap-to-focus operation for the specified metering rectangles.
+     * Trigger tap-to-focus operation for the specified normalized points mapping to the FOV.
+     *
+     * <p>The specified normalized points will be used to calculate the corresponding metering
+     * rectangles that will be applied for AF, AE and AWB.
      */
-    public void tapToFocus(MeteringRectangle[] meteringRectangles) {
+    public void tapToFocus(float[] normalizedPoint) {
         synchronized (mServiceLock) {
             if (!mServiceRunning) {
                 Log.e(TAG, "tapToFocus was called after Service was destroyed");
                 return;
             }
-            mCameraController.tapToFocus(meteringRectangles);
+            mCameraController.tapToFocus(normalizedPoint);
+        }
+    }
+
+    /**
+     * Retrieves current tap-to-focus points.
+     *
+     * @return the normalized points or {@code null} if it is auto-focus mode currently.
+     */
+    public float[] getTapToFocusPoints() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "getTapToFocusPoints was called after Service was destroyed");
+                return null;
+            }
+            return mCameraController.getTapToFocusPoints();
+        }
+    }
+
+    /**
+     * Resets to the auto-focus mode.
+     */
+    public void resetToAutoFocus() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "resetToAutoFocus was called after Service was destroyed");
+                return;
+            }
+            mCameraController.resetToAutoFocus();
         }
     }
 
