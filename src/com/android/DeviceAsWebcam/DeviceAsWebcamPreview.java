@@ -22,12 +22,16 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Insets;
-import android.graphics.Matrix;
-import android.graphics.Rect;
+import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.OvalShape;
 import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.params.MeteringRectangle;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.IBinder;
@@ -60,8 +64,6 @@ public class DeviceAsWebcamPreview extends Activity {
     private static final String TAG = DeviceAsWebcamPreview.class.getSimpleName();
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final int ROTATION_ANIMATION_DURATION_MS = 300;
-    private static final int FOCUS_INDICATOR_AUTO_HIDE_DURATION_MS = 1000;
-    private static final float METERING_RECTANGLE_SIZE = 0.15f;
 
     private final Executor mThreadExecutor = Executors.newFixedThreadPool(2);
     private final ConditionVariable mServiceReady = new ConditionVariable();
@@ -74,7 +76,6 @@ public class DeviceAsWebcamPreview extends Activity {
     private CardView mTextureViewCard;
     private TextureView mTextureView;
     private View mFocusIndicator;
-    private Runnable mAutoHideFocusIndicator = () -> mFocusIndicator.setVisibility(View.GONE);
     private ZoomController mZoomController = null;
     private ImageButton mToggleCameraButton;
     // A listener to monitor the preview size change events. This might be invoked when toggling
@@ -242,6 +243,12 @@ public class DeviceAsWebcamPreview extends Activity {
         GestureDetector tapToFocusGestureDetector = new GestureDetector(getApplicationContext(),
                 mTapToFocusListener);
 
+        // Restores the focus indicator if tap-to-focus points exist
+        float[] tapToFocusPoints = mLocalFgService.getTapToFocusPoints();
+        if (tapToFocusPoints != null) {
+            showFocusIndicator(tapToFocusPoints);
+        }
+
         mTextureView.setOnTouchListener(
                 (view, event) -> {
                     mMotionEventToZoomRatioConverter.onTouchEvent(event);
@@ -334,6 +341,7 @@ public class DeviceAsWebcamPreview extends Activity {
         mTextureViewCard = findViewById(R.id.texture_view_card);
         mTextureView = findViewById(R.id.texture_view);
         mFocusIndicator = findViewById(R.id.focus_indicator);
+        mFocusIndicator.setBackground(createFocusIndicatorDrawable());
         mToggleCameraButton = findViewById(R.id.toggle_camera_button);
         mZoomController = findViewById(R.id.zoom_ui_controller);
 
@@ -353,6 +361,25 @@ public class DeviceAsWebcamPreview extends Activity {
 
         bindService(new Intent(this, DeviceAsWebcamFgService.class), 0, mThreadExecutor,
                 mConnection);
+    }
+
+    private Drawable createFocusIndicatorDrawable() {
+        int indicatorSize = getResources().getDimensionPixelSize(R.dimen.focus_indicator_size);
+        Bitmap bitmap = Bitmap.createBitmap(indicatorSize, indicatorSize, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        OvalShape ovalShape = new OvalShape();
+        ShapeDrawable shapeDrawable = new ShapeDrawable(ovalShape);
+        Paint paint = shapeDrawable.getPaint();
+        paint.setAntiAlias(true);
+        paint.setColor(getResources().getColor(R.color.focus_indicator_background_color, null));
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(3);
+
+        int circleRadius = indicatorSize / 2;
+        canvas.drawCircle(circleRadius, circleRadius, circleRadius - 1, paint);
+
+        return new BitmapDrawable(getResources(), bitmap);
     }
 
     private void hideSystemUiAndActionBar() {
@@ -422,6 +449,7 @@ public class DeviceAsWebcamPreview extends Activity {
         }
 
         mLocalFgService.toggleCamera();
+        mFocusIndicator.setVisibility(View.GONE);
         mMotionEventToZoomRatioConverter.reset(mLocalFgService.getZoomRatio(),
                 mLocalFgService.getCameraInfo().getZoomRatioRange());
         setupZoomRatioSeekBar();
@@ -435,16 +463,40 @@ public class DeviceAsWebcamPreview extends Activity {
         }
 
         float[] normalizedPoint = calculateNormalizedPoint(motionEvent);
-        showFocusIndicatorWithAutoHide(normalizedPoint);
-        MeteringRectangle meteringRectangle = calculateMeteringRectangle(normalizedPoint);
 
-        if (meteringRectangle == null) {
+        if (isTapToResetAutoFocus(normalizedPoint)) {
+            mFocusIndicator.setVisibility(View.GONE);
+            mLocalFgService.resetToAutoFocus();
+        } else {
+            showFocusIndicator(normalizedPoint);
+            mLocalFgService.tapToFocus(normalizedPoint);
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns whether the new points overlap with the original tap-to-focus points or not.
+     */
+    private boolean isTapToResetAutoFocus(float[] newNormalizedPoints) {
+        float[] oldNormalizedPoints = mLocalFgService.getTapToFocusPoints();
+
+        if (oldNormalizedPoints == null) {
             return false;
         }
 
-        mLocalFgService.tapToFocus(new MeteringRectangle[]{meteringRectangle});
+        // Calculates the distance between the new and old points
+        float distanceX = Math.abs(newNormalizedPoints[1] - oldNormalizedPoints[1])
+                * mTextureViewCard.getWidth();
+        float distanceY = Math.abs(newNormalizedPoints[0] - oldNormalizedPoints[0])
+                * mTextureViewCard.getHeight();
+        double distance = Math.sqrt(distanceX*distanceX + distanceY*distanceY);
 
-        return true;
+        int indicatorRadius = getResources().getDimensionPixelSize(R.dimen.focus_indicator_size)
+                / 2;
+
+        // Checks whether the distance is less than the circle radius of focus indicator
+        return indicatorRadius >= distance;
     }
 
     /**
@@ -457,54 +509,16 @@ public class DeviceAsWebcamPreview extends Activity {
     }
 
     /**
-     * Calculates the metering rectangle according to the normalized point.
-     */
-    private MeteringRectangle calculateMeteringRectangle(float[] normalizedPoint) {
-        CameraInfo cameraInfo = mLocalFgService.getCameraInfo();
-        Rect activeArraySize = cameraInfo.getActiveArraySize();
-        float halfMeteringRectWidth = (METERING_RECTANGLE_SIZE * activeArraySize.width()) / 2;
-        float halfMeteringRectHeight = (METERING_RECTANGLE_SIZE * activeArraySize.height()) / 2;
-
-        Matrix matrix = new Matrix();
-        matrix.postRotate(-cameraInfo.getSensorOrientation(), 0.5f, 0.5f);
-        // Flips if current working camera is front camera
-        if (cameraInfo.getLensFacing() == CameraCharacteristics.LENS_FACING_FRONT) {
-            matrix.postScale(1, -1, 0.5f, 0.5f);
-        }
-        matrix.postScale(activeArraySize.width(), activeArraySize.height());
-        matrix.mapPoints(normalizedPoint);
-
-        Rect meteringRegion = new Rect(
-                clamp((int) (normalizedPoint[0] - halfMeteringRectWidth), 0,
-                        activeArraySize.width()),
-                clamp((int) (normalizedPoint[1] - halfMeteringRectHeight), 0,
-                        activeArraySize.height()),
-                clamp((int) (normalizedPoint[0] + halfMeteringRectWidth), 0,
-                        activeArraySize.width()),
-                clamp((int) (normalizedPoint[1] + halfMeteringRectHeight), 0,
-                        activeArraySize.height())
-        );
-
-        return new MeteringRectangle(meteringRegion, MeteringRectangle.METERING_WEIGHT_MAX);
-    }
-
-    /**
      * Show the focus indicator and hide it automatically after a proper duration.
      */
-    private void showFocusIndicatorWithAutoHide(float[] normalizedPoint) {
-        mFocusIndicator.setVisibility(View.VISIBLE);
+    private void showFocusIndicator(float[] normalizedPoint) {
+        int indicatorSize = getResources().getDimensionPixelSize(R.dimen.focus_indicator_size);
         float translationX =
-                normalizedPoint[0] * mTextureViewCard.getWidth() - mFocusIndicator.getWidth() / 2f;
+                normalizedPoint[0] * mTextureViewCard.getWidth() - indicatorSize / 2f;
         float translationY = normalizedPoint[1] * mTextureViewCard.getHeight()
-                - mFocusIndicator.getHeight() / 2f;
+                - indicatorSize / 2f;
         mFocusIndicator.setTranslationX(translationX);
         mFocusIndicator.setTranslationY(translationY);
-        getMainThreadHandler().removeCallbacks(mAutoHideFocusIndicator);
-        getMainThreadHandler().postDelayed(mAutoHideFocusIndicator,
-                FOCUS_INDICATOR_AUTO_HIDE_DURATION_MS);
-    }
-
-    private int clamp(int value, int min, int max) {
-        return Math.min(Math.max(value, min), max);
+        mFocusIndicator.setVisibility(View.VISIBLE);
     }
 }

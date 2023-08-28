@@ -28,4 +28,5 @@
     <color name="zoom_seek_bar_stroke_color">#80FFFFFF</color>
     <color name="zoom_toggle_button_background_color">@android:color/system_accent1_400</color>
     <color name="zoom_ui_toggle_bar_text_color">#FFFFFF</color>
+    <color name="focus_indicator_background_color">#80666666</color>
 </resources>
