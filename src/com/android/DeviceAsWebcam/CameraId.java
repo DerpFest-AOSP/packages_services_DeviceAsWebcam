@@ -74,7 +74,7 @@ public class CameraId {
     /**
      * Creates an identifier string to represent the camera.
      */
-    private static String createIdentifier(String cameraId, @Nullable String physicalCameraId) {
+    public static String createIdentifier(String cameraId, @Nullable String physicalCameraId) {
         return cameraId + CAMERA_ID_SPLITTER + physicalCameraId;
     }
 
