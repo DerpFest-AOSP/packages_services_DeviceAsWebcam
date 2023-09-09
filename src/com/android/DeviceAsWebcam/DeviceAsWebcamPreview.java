@@ -41,7 +41,6 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
-import android.view.accessibility.AccessibilityManager;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -53,14 +52,18 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.view.accessibility.AccessibilityManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 
 import androidx.cardview.widget.CardView;
 
+import com.android.DeviceAsWebcam.view.SelectorListItemData;
+import com.android.DeviceAsWebcam.view.SwitchCameraSelectorView;
 import com.android.DeviceAsWebcam.view.ZoomController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -85,6 +88,8 @@ public class DeviceAsWebcamPreview extends Activity {
     private View mFocusIndicator;
     private ZoomController mZoomController = null;
     private ImageButton mToggleCameraButton;
+    private SwitchCameraSelectorView mSwitchCameraSelectorView;
+    private List<SelectorListItemData> mSelectorListItemDataList;
     // A listener to monitor the preview size change events. This might be invoked when toggling
     // camera or the webcam stream is started after the preview stream.
     Consumer<Size> mPreviewSizeChangeListener = size -> runOnUiThread(() -> {
@@ -122,22 +127,39 @@ public class DeviceAsWebcamPreview extends Activity {
                         if (!mTextureViewSetup) {
                             setupTextureViewLayout();
                         }
-                        if (mLocalFgService != null) {
-                            mLocalFgService.setOnDestroyedCallback(() -> onServiceDestroyed());
-                            if (mPreviewSize != null) {
-                                mLocalFgService.setPreviewSurfaceTexture(texture, mPreviewSize,
-                                        mPreviewSizeChangeListener);
-                                if (mLocalFgService.canToggleCamera()) {
-                                    mToggleCameraButton.setVisibility(View.VISIBLE);
-                                    mToggleCameraButton.setOnClickListener(v -> toggleCamera());
-                                } else {
-                                    mToggleCameraButton.setVisibility(View.GONE);
-                                }
-                                rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
-                                mLocalFgService.setRotationUpdateListener(
-                                        rotation -> rotateUiByRotationDegrees(rotation));
-                            }
+
+                        if (mLocalFgService == null) {
+                            return;
                         }
+                        mLocalFgService.setOnDestroyedCallback(() -> onServiceDestroyed());
+
+                        if (mPreviewSize == null) {
+                            return;
+                        }
+                        mLocalFgService.setPreviewSurfaceTexture(texture, mPreviewSize,
+                                mPreviewSizeChangeListener);
+                        List<CameraId> availableCameraIds =
+                                mLocalFgService.getAvailableCameraIds();
+                        if (availableCameraIds != null && availableCameraIds.size() > 1) {
+                            setupSwitchCameraSelector();
+                            mToggleCameraButton.setVisibility(View.VISIBLE);
+                            if (canToggleCamera()) {
+                                mToggleCameraButton.setOnClickListener(v -> toggleCamera());
+                            } else {
+                                mToggleCameraButton.setOnClickListener(v -> {
+                                    mSwitchCameraSelectorView.show();
+                                });
+                            }
+                            mToggleCameraButton.setOnLongClickListener(v -> {
+                                mSwitchCameraSelectorView.show();
+                                return true;
+                            });
+                        } else {
+                            mToggleCameraButton.setVisibility(View.GONE);
+                        }
+                        rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
+                        mLocalFgService.setRotationUpdateListener(
+                                rotation -> rotateUiByRotationDegrees(rotation));
                     });
                 }
 
@@ -297,6 +319,27 @@ public class DeviceAsWebcamPreview extends Activity {
                 mLocalFgService.getCameraInfo().getZoomRatioRange());
     }
 
+    private void setupSwitchCameraSelector() {
+        if (mLocalFgService == null || mLocalFgService.getCameraInfo() == null) {
+            return;
+        }
+
+        mSelectorListItemDataList = createSelectorItemDataList();
+
+        mSwitchCameraSelectorView.init(getLayoutInflater(), mSelectorListItemDataList);
+        mSwitchCameraSelectorView.setRotation(mLocalFgService.getCurrentRotation());
+        mSwitchCameraSelectorView.setOnCameraSelectedListener(cameraId -> switchCamera(cameraId));
+        mSwitchCameraSelectorView.updateSelectedItem(
+                mLocalFgService.getCameraInfo().getCameraId());
+
+        // Dynamically enable/disable the toggle button and zoom controller so that the behaviors
+        // under accessibility mode will be correct.
+        mSwitchCameraSelectorView.setOnVisibilityChangedListener(visibility -> {
+            mToggleCameraButton.setEnabled(visibility != View.VISIBLE);
+            mZoomController.setEnabled(visibility != View.VISIBLE);
+        });
+    }
+
     private void rotateUiByRotationDegrees(int rotation) {
         if (mLocalFgService == null) {
             // Don't do anything if no foreground service is connected
@@ -313,6 +356,7 @@ public class DeviceAsWebcamPreview extends Activity {
                     HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE);
 
             mZoomController.setTextDisplayRotation(finalRotation, ROTATION_ANIMATION_DURATION_MS);
+            mSwitchCameraSelectorView.setRotation(finalRotation);
         });
     }
 
@@ -365,11 +409,14 @@ public class DeviceAsWebcamPreview extends Activity {
         mFocusIndicator.setBackground(createFocusIndicatorDrawable());
         mToggleCameraButton = findViewById(R.id.toggle_camera_button);
         mZoomController = findViewById(R.id.zoom_ui_controller);
+        mSwitchCameraSelectorView = findViewById(R.id.switch_camera_selector_view);
+
         mAccessibilityManager = getSystemService(AccessibilityManager.class);
         if (mAccessibilityManager != null) {
             mAccessibilityManager.addAccessibilityServicesStateChangeListener(
                     mAccessibilityListener);
         }
+
         // Update view to allow for status bar. This let's us keep a consistent background color
         // behind the statusbar.
         mTextureViewContainer.setOnApplyWindowInsetsListener((view, inset) -> {
@@ -500,6 +547,31 @@ public class DeviceAsWebcamPreview extends Activity {
         super.onDestroy();
     }
 
+    /**
+     * Returns {@code true} when the device has both available back and front cameras. Otherwise,
+     * returns {@code false}.
+     */
+    private boolean canToggleCamera() {
+        if (mLocalFgService == null) {
+            return false;
+        }
+
+        List<CameraId> availableCameraIds = mLocalFgService.getAvailableCameraIds();
+        boolean hasBackCamera = false;
+        boolean hasFrontCamera = false;
+
+        for (CameraId cameraId : availableCameraIds) {
+            CameraInfo cameraInfo = mLocalFgService.getOrCreateCameraInfo(cameraId);
+            if (cameraInfo.getLensFacing() == CameraCharacteristics.LENS_FACING_BACK) {
+                hasBackCamera = true;
+            } else if (cameraInfo.getLensFacing() == CameraCharacteristics.LENS_FACING_FRONT) {
+                hasFrontCamera = true;
+            }
+        }
+
+        return hasBackCamera && hasFrontCamera;
+    }
+
     private void toggleCamera() {
         if (mLocalFgService == null) {
             return;
@@ -507,6 +579,21 @@ public class DeviceAsWebcamPreview extends Activity {
 
         mLocalFgService.toggleCamera();
         mFocusIndicator.setVisibility(View.GONE);
+        mMotionEventToZoomRatioConverter.reset(mLocalFgService.getZoomRatio(),
+                mLocalFgService.getCameraInfo().getZoomRatioRange());
+        setupZoomRatioSeekBar();
+        mZoomController.setZoomRatio(mLocalFgService.getZoomRatio(),
+                ZoomController.ZOOM_UI_TOGGLE_MODE);
+        mSwitchCameraSelectorView.updateSelectedItem(
+                mLocalFgService.getCameraInfo().getCameraId());
+    }
+
+    private void switchCamera(CameraId cameraId) {
+        if (mLocalFgService == null) {
+            return;
+        }
+
+        mLocalFgService.switchCamera(cameraId);
         mMotionEventToZoomRatioConverter.reset(mLocalFgService.getZoomRatio(),
                 mLocalFgService.getCameraInfo().getZoomRatioRange());
         setupZoomRatioSeekBar();
@@ -577,5 +664,40 @@ public class DeviceAsWebcamPreview extends Activity {
         mFocusIndicator.setTranslationX(translationX);
         mFocusIndicator.setTranslationY(translationY);
         mFocusIndicator.setVisibility(View.VISIBLE);
+    }
+
+    private List<SelectorListItemData> createSelectorItemDataList() {
+        List<SelectorListItemData> selectorItemDataList = new ArrayList<>();
+        addSelectorItemDataByLensFacing(selectorItemDataList,
+                CameraCharacteristics.LENS_FACING_BACK);
+        addSelectorItemDataByLensFacing(selectorItemDataList,
+                CameraCharacteristics.LENS_FACING_FRONT);
+
+        return selectorItemDataList;
+    }
+
+    private void addSelectorItemDataByLensFacing(List<SelectorListItemData> selectorItemDataList,
+            int targetLensFacing) {
+        if (mLocalFgService == null) {
+            return;
+        }
+
+        boolean lensFacingHeaderAdded = false;
+
+        for (CameraId cameraId : mLocalFgService.getAvailableCameraIds()) {
+            CameraInfo cameraInfo = mLocalFgService.getOrCreateCameraInfo(cameraId);
+
+            if (cameraInfo.getLensFacing() == targetLensFacing) {
+                if (!lensFacingHeaderAdded) {
+                    selectorItemDataList.add(
+                            SelectorListItemData.createHeaderItemData(targetLensFacing));
+                    lensFacingHeaderAdded = true;
+                }
+
+                selectorItemDataList.add(SelectorListItemData.createCameraItemData(
+                        cameraInfo));
+            }
+
+        }
     }
 }

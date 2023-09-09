@@ -36,5 +36,19 @@
     <!-- Strings for reading/writing user preferences to SharedPreferences -->
     <string name="prefs_file_name">com.android.DeviceAsWebcam.user.prefs</string>
     <string name="prefs_camera_id_key">camera.id</string>
+    <string name="prefs_back_camera_id_key">back.camera.id</string>
+    <string name="prefs_front_camera_id_key">front.camera.id</string>
     <string name="prefs_zoom_ratio_key">zoom.ratio.%s</string>
+
+    <!-- Strings for switch camera selector dialog -->
+    <string name="list_item_text_back_camera">Back camera</string>
+    <string name="list_item_text_front_camera">Front camera</string>
+    <string name="list_item_text_standard_camera">Standard camera</string>
+    <string name="list_item_text_wide_angle_camera">Wide angle camera</string>
+    <string name="list_item_text_ultra_wide_camera">Ultra wide camera</string>
+    <string name="list_item_text_telephoto_camera">Telephoto camera</string>
+    <string name="list_item_text_other_camera">Other camera</string>
+    <string name="list_item_text_unknown_camera">Unknown camera</string>
+    <!-- Accessibility description for the OK button -->
+    <string name="camera_options_list_description">Available camera options</string>
 </resources>
