@@ -31,7 +31,13 @@ The details of the overridable files are as follows:
   The 'camera-label' field here helps DeviceAsWebcam label these physical camera
   ids in the UI elements of the service. The mapping containing physical camera
   ids is in order of preference of the physical streams that must be used by
-  DeviceAsWebcam service.
+  DeviceAsWebcam service. Available camera-labels are:
+
+  - `UW`: Ultra-wide
+  - `W`: Wide
+  - `T`: Telephoto
+  - `S`: Standard
+  - `O`: Other
 
   For example, if a vendor would like to advertise 2 possible physical streams
   with camera ids 3(Ultra-wide) and 4(Wide) for the back logical camera the
@@ -81,6 +87,24 @@ The details of the overridable files are as follows:
       "4" : ["1.0", "8.0"]
     }
   }
+  ```
+
+- `ignored_cameras.json`:
+
+  By default, DeviceAsWebcam exposes all backward compatible cameras listed in
+  `CameraManager#getCameraIdList()` as supported cameras to stream webcam frames
+  from. `ignored_cameras.json` provides a way to ignore a predetermined set of
+  cameras if they are not expected to be used with DeviceAsWebcam.
+
+  For example, if a vendor would like to ignore camera ids 22 and 66, the ignored
+  cameras array could be:
+
+  ```json
+  [
+      "22",
+      "66",
+      ...
+  ]
   ```
 
 - `ignored_v4l2_nodes.json`:
