@@ -118,8 +118,9 @@ public class CameraController {
     private CameraStreamingState mCurrentState = CameraStreamingState.NO_STREAMING;
 
     // current camera availability state - to be accessed only from camera related callbacks which
-    // execute on mCameraCallbacksExecutor
-    private CameraAvailabilityState mCameraAvailabilityState = CameraAvailabilityState.AVAILABLE;
+    // execute on mCameraCallbacksExecutor. This isn't a part of mCameraInfo since that is static
+    // information about a camera and has looser thread access requirements.
+    private ArrayMap<String, CameraAvailabilityState> mCameraAvailabilityState = new ArrayMap<>();
 
     private Context mContext;
     private WeakReference<DeviceAsWebcamFgService> mServiceWeak;
@@ -181,7 +182,7 @@ public class CameraController {
                 Log.v(TAG, "Camera device opened, creating capture session now");
             }
             mCameraDevice = cameraDevice;
-            mCameraAvailabilityState = CameraAvailabilityState.IN_USE;
+            mCameraAvailabilityState.put(cameraDevice.getId(), CameraAvailabilityState.IN_USE);
             mReadyToStream.open();
         }
 
@@ -189,10 +190,17 @@ public class CameraController {
         public void onDisconnected(CameraDevice cameraDevice) {
             if (VERBOSE) {
                 Log.v(TAG, "onDisconnected: " + cameraDevice.getId() + " camera available state "
-                        + mCameraAvailabilityState);
+                        + mCameraAvailabilityState.get(cameraDevice.getId()));
             }
             synchronized (mSerializationLock) {
-                mCameraAvailabilityState = CameraAvailabilityState.EVICTED;
+                // In this case we got disconnected due to an eviction, in the other case the camera
+                // got disconnected to an onError callback - for example when there is a camera HAL
+                // or service crash.
+                if (mCameraAvailabilityState.get(cameraDevice.getId()) !=
+                        CameraAvailabilityState.WAITING_FOR_AVAILABLE) {
+                    mCameraAvailabilityState.put(cameraDevice.getId(),
+                            CameraAvailabilityState.EVICTED);
+                }
                 mCameraDevice = null;
                 stopStreamingAltogetherLocked(/*closeImageReader*/false);
                 if (mStartCaptureWebcamStream.get()) {
@@ -206,9 +214,10 @@ public class CameraController {
             if (VERBOSE) {
                 Log.e(TAG, "Camera : onError " + error);
             }
+            mCameraAvailabilityState.put(
+                    cameraDevice.getId(), CameraAvailabilityState.WAITING_FOR_AVAILABLE);
+            mReadyToStream.open();
             if (mStartCaptureWebcamStream.get()) {
-                // There was an error opening the camera device; stream camera unavailable logo.
-                mReadyToStream.open();
                 startShowingCameraUnavailableLogo();
             }
         }
@@ -225,10 +234,9 @@ public class CameraController {
                     }
                     mCaptureSession = cameraCaptureSession;
                     try {
-                            mCaptureSession.setSingleRepeatingRequest(
-                                    mPreviewRequestBuilder.build(), mCameraCallbacksExecutor,
-                                    mCaptureCallback);
-
+                        mCaptureSession.setSingleRepeatingRequest(
+                                mPreviewRequestBuilder.build(), mCameraCallbacksExecutor,
+                                mCaptureCallback);
                     } catch (CameraAccessException e) {
                         Log.e(TAG, "setSingleRepeatingRequest failed", e);
                     }
@@ -255,30 +263,36 @@ public class CameraController {
             new CameraManager.AvailabilityCallback() {
         @Override
         public void onCameraAvailable(String cameraId) {
-            switch (mCameraAvailabilityState) {
+            mCameraAvailabilityState.putIfAbsent(cameraId, CameraAvailabilityState.AVAILABLE);
+            switch (mCameraAvailabilityState.get(cameraId)) {
                 case EVICTED:
-                    mCameraAvailabilityState = CameraAvailabilityState.WAITING_FOR_UNAVAILABLE;
+                    mCameraAvailabilityState.put(
+                            cameraId, CameraAvailabilityState.WAITING_FOR_UNAVAILABLE);
                     break;
                 case WAITING_FOR_AVAILABLE:
-                    if (mStartCaptureWebcamStream.get()) {
+                    if (mStartCaptureWebcamStream.get() && cameraId.equals(mCameraId)) {
                         if (VERBOSE) {
-                            Log.v(TAG, "Camera is available : starting webcam stream");
+                            Log.v(TAG, "Camera is available : starting webcam stream for camera id "
+                                    + cameraId);
                         }
                         stopShowingCameraUnavailableLogo();
                         setWebcamStreamConfig(mStreamConfigs.isMjpeg, mStreamConfigs.width,
                                 mStreamConfigs.height, mStreamConfigs.fps);
                         startWebcamStreaming();
-                        mCameraAvailabilityState = CameraAvailabilityState.IN_USE;
+                        mCameraAvailabilityState.put(
+                                cameraId, CameraAvailabilityState.IN_USE);
                     } else {
-                        mCameraAvailabilityState = CameraAvailabilityState.AVAILABLE;
+                        mCameraAvailabilityState.put(
+                            cameraId, CameraAvailabilityState.AVAILABLE);
                     }
                     break;
                 default:
-                    mCameraAvailabilityState = CameraAvailabilityState.AVAILABLE;
+                    mCameraAvailabilityState.put(
+                        cameraId, CameraAvailabilityState.AVAILABLE);
             }
             if (VERBOSE) {
                 Log.v(TAG, "onCameraAvailable: " + cameraId + " camera available state "
-                        + mCameraAvailabilityState);
+                        + mCameraAvailabilityState.get(cameraId));
             }
         }
 
@@ -286,7 +300,10 @@ public class CameraController {
         public void onCameraUnavailable(String cameraId) {
             // We're unconditionally waiting for available - mStartCaptureWebcamStream will decide
             // whether we need to do anything about it.
-            mCameraAvailabilityState = CameraAvailabilityState.WAITING_FOR_AVAILABLE;
+            if (VERBOSE) {
+                Log.v(TAG, "Camera id " + cameraId + " unavailable");
+            }
+            mCameraAvailabilityState.put(cameraId, CameraAvailabilityState.WAITING_FOR_AVAILABLE);
         }
     };
 
@@ -945,6 +962,7 @@ public class CameraController {
         mWebcamOutputConfiguration = null;
         mPreviewOutputConfiguration = null;
         mTapToFocusPoints = null;
+        mReadyToStream.close();
     }
 
     public void stopWebcamStreaming() {
