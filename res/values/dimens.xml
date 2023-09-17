@@ -20,7 +20,7 @@
     <dimen name="zoom_knob_elevation">-11dp</dimen>
     <dimen name="zoom_knob_lift">12dp</dimen>
     <dimen name="zoom_knob_size">48dp</dimen>
-    <dimen name="zoom_knob_text_size">12sp</dimen>
+    <dimen name="zoom_knob_text_size">12dp</dimen>
     <dimen name="zoom_seekbar_height">5dp</dimen>
     <dimen name="zoom_seekbar_mid_thumb_size">4dp</dimen>
     <dimen name="zoom_seekbar_stroke_width">0.5dp</dimen>
@@ -36,7 +36,7 @@
     <dimen name="zoom_ui_toggle_background_margin_top">71.5dp</dimen>
     <dimen name="zoom_ui_toggle_btn_margin_top">69.5dp</dimen>
     <dimen name="zoom_ui_toggle_btn_size">32dp</dimen>
-    <dimen name="zoom_ui_toggle_btn_text_size">12sp</dimen>
+    <dimen name="zoom_ui_toggle_btn_text_size">12dp</dimen>
     <dimen name="zoom_ui_toggle_height">36dp</dimen>
     <dimen name="zoom_ui_toggle_options_layout_margin_top">43dp</dimen>
     <dimen name="zoom_ui_toggle_options_layout_padding_end">2dp</dimen>
