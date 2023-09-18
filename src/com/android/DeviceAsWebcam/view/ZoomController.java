@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.SeekBar;
@@ -179,7 +180,6 @@ public class ZoomController extends FrameLayout {
             } else {
                 updateSeekBarProgressByMotionEvent(event);
             }
-
             return false;
         });
 
@@ -340,7 +340,6 @@ public class ZoomController extends FrameLayout {
         updateZoomKnobByZoomRatio(zoomRatio);
         mSeekBar.setProgress(convertZoomRatioToProgress(zoomRatio));
         switchZoomUiMode(zoomUiMode);
-        mSeekBar.setEnabled(zoomUiMode == ZOOM_UI_SEEK_BAR_MODE);
         resetToggleUiAutoShowRunnable();
     }
 
@@ -357,8 +356,18 @@ public class ZoomController extends FrameLayout {
             mOnZoomRatioUpdatedListener.onValueChanged(roundedZoomRatio);
         }
 
+        boolean sendAccessibilityEvent = roundedZoomRatio != mCurrentZoomRatio &&
+                                         (int)
+                                            (Math.floor(roundedZoomRatio) -
+                                                Math.floor(mCurrentZoomRatio)) != 0;
+
         mCurrentZoomRatio = roundedZoomRatio;
         updateToggleOptionValues();
+        mSeekBar.setStateDescription(Float.toString(mCurrentZoomRatio));
+        mToggleUiOptions.setStateDescription(Float.toString(mCurrentZoomRatio));
+        if (sendAccessibilityEvent) {
+            mSeekBar.sendAccessibilityEvent(AccessibilityEvent.CONTENT_CHANGE_TYPE_TEXT);
+        }
     }
 
     /**
@@ -400,10 +409,6 @@ public class ZoomController extends FrameLayout {
         int seekBarUiVisibility = (zoomUiMode == ZOOM_UI_SEEK_BAR_MODE) ? View.VISIBLE : View.GONE;
         mSeekBar.setVisibility(seekBarUiVisibility);
         mZoomKnob.setVisibility(seekBarUiVisibility);
-
-        if (zoomUiMode == ZOOM_UI_TOGGLE_MODE) {
-            mSeekBar.setEnabled(false);
-        }
 
         return false;
     }
@@ -533,7 +538,6 @@ public class ZoomController extends FrameLayout {
             mFirstPositionSkipped = false;
             mPreviousXPosition = INVALID_X_POSITION;
             resetToggleUiAutoShowRunnable();
-            mSeekBar.setEnabled(true);
         } else {
             mPreviousXPosition = event.getX();
         }
