@@ -27,6 +27,7 @@
             android:id="@+id/zoom_ui_seekbar_slider"
             android:layout_width="match_parent"
             android:layout_height="@dimen/zoom_ui_seekbar_touch_area_height"
+            android:contentDescription="@string/zoom_seek_bar_description"
             android:layout_gravity="center"
             android:background="@null"
             android:maxHeight="@dimen/zoom_ui_seekbar_half_height"
@@ -49,6 +50,7 @@
             android:layout_gravity="center"
             android:paddingStart="@dimen/zoom_ui_toggle_options_layout_padding_start"
             android:paddingEnd="@dimen/zoom_ui_toggle_options_layout_padding_end"
+            android:contentDescription="@string/zoom_ratio_description"
             android:layoutDirection="ltr">
             <ImageView
                 android:id="@+id/zoom_ui_toggle_background"
