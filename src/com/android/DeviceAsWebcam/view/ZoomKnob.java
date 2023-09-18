@@ -38,43 +38,27 @@ public class ZoomKnob extends AppCompatTextView {
      */
     private int mMaxZoomProgress;
     /**
-     * The knob size expressed in pixels.
+     * The SeekBar this Knob is attached to.
      */
-    private final int mKnobSize;
-    /**
-     * The seek bar width expressed in pixels.
-     */
-    private final int mSeekBarWidth;
-    /**
-     * The knob's bottom margin expressed in pixels when it is not elevated.
-     */
-    private int mNoElevatedBottomMargin;
+    private SeekBar mSeekBar;
 
     public ZoomKnob(Context context, AttributeSet attrs) {
         super(context, attrs);
         mResources = context.getResources();
-        mSeekBarWidth = mResources.getDimensionPixelSize(R.dimen.zoom_seekbar_width);
-        mKnobSize = getResources().getDimensionPixelSize(R.dimen.zoom_knob_size);
     }
 
     void initialize(SeekBar zoomSeekBar, int maxZoomProgress) {
+        mSeekBar = zoomSeekBar;
         mMaxZoomProgress = maxZoomProgress;
         float textSizePx = mResources.getDimensionPixelSize(R.dimen.zoom_knob_text_size);
         float textSizeSp = textSizePx / mResources.getDisplayMetrics().scaledDensity;
 
-        int elevation = mResources.getDimensionPixelSize(R.dimen.zoom_knob_elevation);
         setElevation(mResources.getDimensionPixelSize(R.dimen.zoom_thumb_elevation));
         setGravity(Gravity.CENTER);
         setTextAlignment(TEXT_ALIGNMENT_CENTER);
         setTextSize(textSizeSp);
 
-        int sliderHeight = zoomSeekBar.getLayoutParams().height;
-        mNoElevatedBottomMargin = ((sliderHeight - mKnobSize) / 2) - elevation / 2;
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getLayoutParams();
-        lp.bottomMargin = mNoElevatedBottomMargin;
-        setLayoutParams(lp);
-
-        zoomSeekBar.setSplitTrack(false);
+        mSeekBar.setSplitTrack(false);
     }
 
     /**
@@ -84,14 +68,9 @@ public class ZoomKnob extends AppCompatTextView {
      * @param zoomRatio    the zoom ratio.
      */
     public void updateZoomProgress(int zoomProgress, float zoomRatio) {
-        int halfSeekBarWidth = mSeekBarWidth / 2;
+        int maxMargin = mSeekBar.getWidth() - getWidth();
         FrameLayout.LayoutParams lp = (LayoutParams) getLayoutParams();
-        int midProgress = mMaxZoomProgress / 2;
-        int margin =
-                (int)
-                        (halfSeekBarWidth
-                                * (float) (zoomProgress - midProgress)
-                                / (mMaxZoomProgress / 2));
+        int margin = (int) (((float) zoomProgress / mMaxZoomProgress) * maxMargin);
         lp.leftMargin = margin;
         lp.rightMargin = 0;
         setLayoutParams(lp);
@@ -101,11 +80,12 @@ public class ZoomKnob extends AppCompatTextView {
     /** Elevate the knob above SeekBar. */
     public void setElevated(boolean elevated) {
         FrameLayout.LayoutParams lp = (LayoutParams) getLayoutParams();
-        int liftDistance =
-                mResources.getDimensionPixelSize(R.dimen.zoom_knob_lift)
-                        + mResources.getDimensionPixelSize(R.dimen.zoom_icon_size) / 2
-                        + mNoElevatedBottomMargin;
-        lp.bottomMargin = elevated ? liftDistance : mNoElevatedBottomMargin;
+        if (elevated) {
+            lp.bottomMargin = mResources.getDimensionPixelSize(R.dimen.zoom_knob_lift)
+                    + (mResources.getDimensionPixelSize(R.dimen.zoom_icon_size) / 2);
+        } else {
+            lp.bottomMargin = 0;
+        }
         setLayoutParams(lp);
     }
 }
