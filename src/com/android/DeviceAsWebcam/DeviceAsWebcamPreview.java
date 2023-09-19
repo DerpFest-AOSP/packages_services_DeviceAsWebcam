@@ -16,6 +16,9 @@
 
 package com.android.DeviceAsWebcam;
 
+import static android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK;
+
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -38,6 +41,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
+import android.view.accessibility.AccessibilityManager;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -56,6 +60,7 @@ import androidx.cardview.widget.CardView;
 
 import com.android.DeviceAsWebcam.view.ZoomController;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -71,6 +76,7 @@ public class DeviceAsWebcamPreview extends Activity {
     private boolean mTextureViewSetup = false;
     private Size mPreviewSize;
     private DeviceAsWebcamFgService mLocalFgService;
+    private AccessibilityManager mAccessibilityManager;
 
     private FrameLayout mTextureViewContainer;
     private CardView mTextureViewCard;
@@ -85,6 +91,17 @@ public class DeviceAsWebcamPreview extends Activity {
                 setTextureViewScale();
             }
     );
+
+    // Listener for when Accessibility service are enabled or disabled.
+    AccessibilityManager.AccessibilityServicesStateChangeListener mAccessibilityListener =
+            accessibilityManager -> {
+                List<AccessibilityServiceInfo> services =
+                        accessibilityManager.getEnabledAccessibilityServiceList(FEEDBACK_ALL_MASK);
+                boolean areServicesEnabled = !services.isEmpty();
+                runOnUiThread(() ->
+                        mZoomController.onAccessibilityServicesEnabled(areServicesEnabled));
+            };
+
 
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -265,6 +282,9 @@ public class DeviceAsWebcamPreview extends Activity {
                     }
                     mMotionEventToZoomRatioConverter.setZoomRatio(value);
                 });
+        if (mAccessibilityManager != null) {
+            mAccessibilityListener.onAccessibilityServicesStateChanged(mAccessibilityManager);
+        }
     }
 
     private void setupZoomRatioSeekBar() {
@@ -344,7 +364,11 @@ public class DeviceAsWebcamPreview extends Activity {
         mFocusIndicator.setBackground(createFocusIndicatorDrawable());
         mToggleCameraButton = findViewById(R.id.toggle_camera_button);
         mZoomController = findViewById(R.id.zoom_ui_controller);
-
+        mAccessibilityManager = getSystemService(AccessibilityManager.class);
+        if (mAccessibilityManager != null) {
+            mAccessibilityManager.addAccessibilityServicesStateChangeListener(
+                    mAccessibilityListener);
+        }
         // Update view to allow for status bar. This let's us keep a consistent background color
         // behind the statusbar.
         mTextureViewContainer.setOnApplyWindowInsetsListener((view, inset) -> {
@@ -436,6 +460,10 @@ public class DeviceAsWebcamPreview extends Activity {
 
     @Override
     public void onDestroy() {
+        if (mAccessibilityManager != null) {
+            mAccessibilityManager.removeAccessibilityServicesStateChangeListener(
+                    mAccessibilityListener);
+        }
         if (mLocalFgService != null) {
             mLocalFgService.setOnDestroyedCallback(null);
         }
