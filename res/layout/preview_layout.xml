@@ -69,7 +69,6 @@
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:layout_margin="64dp"
-            android:contentDescription="@string/toggle_camera_button_description"
             android:src="@drawable/ic_switch"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
