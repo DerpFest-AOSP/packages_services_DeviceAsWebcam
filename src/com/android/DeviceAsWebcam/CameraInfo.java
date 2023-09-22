@@ -30,10 +30,12 @@ public class CameraInfo {
     private final Rect mActiveArraySize;
     private final boolean mFacePrioritySupported;
     private final boolean mIsStreamUseCaseSupported;
+    private final CameraCategory mCameraCategory;
 
     public CameraInfo(CameraId cameraId, int lensFacing,
             int sensorOrientation, Range<Float> zoomRatioRange, Rect activeArraySize,
-            boolean facePrioritySupported, boolean streamUseCaseSupported) {
+            boolean facePrioritySupported, boolean streamUseCaseSupported,
+            CameraCategory cameraCategory) {
         mCameraId = cameraId;
         mLensFacing = lensFacing;
         mSensorOrientation = sensorOrientation;
@@ -41,6 +43,7 @@ public class CameraInfo {
         mActiveArraySize = activeArraySize;
         mFacePrioritySupported = facePrioritySupported;
         mIsStreamUseCaseSupported = streamUseCaseSupported;
+        mCameraCategory = cameraCategory;
     }
 
     /**
@@ -90,5 +93,12 @@ public class CameraInfo {
      */
     public boolean isStreamUseCaseSupported() {
         return mIsStreamUseCaseSupported;
+    }
+
+    /**
+     * Returns camera category.
+     */
+    public CameraCategory getCameraCategory() {
+        return mCameraCategory;
     }
 }
