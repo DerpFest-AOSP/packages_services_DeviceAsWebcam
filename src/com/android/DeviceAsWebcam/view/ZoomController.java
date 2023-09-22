@@ -61,6 +61,7 @@ public class ZoomController extends FrameLayout {
      * The toggle UI auto-show duration in ms.
      */
     private static final int TOGGLE_UI_AUTO_SHOW_DURATION_MS = 1000;
+    private static final int TOGGLE_UI_AUTO_SHOW_DURATION_ACCESSIBILITY_MS = 7000;
     /**
      * The invalid x position used when translating the motion events to the seek bar progress.
      */
@@ -134,6 +135,14 @@ public class ZoomController extends FrameLayout {
     private OnZoomRatioUpdatedListener mOnZoomRatioUpdatedListener = null;
     private boolean mFirstPositionSkipped = false;
     private float mPreviousXPosition = INVALID_X_POSITION;
+
+    /**
+     * Timeout for toggling between slider and buttons. This is
+     * {@link #TOGGLE_UI_AUTO_SHOW_DURATION_MS} normally, and increases to
+     * {@link #TOGGLE_UI_AUTO_SHOW_DURATION_ACCESSIBILITY_MS} when accessibility services are
+     * enabled.
+     */
+    private int mToggleAutoShowDurationMs = TOGGLE_UI_AUTO_SHOW_DURATION_MS;
 
     public ZoomController(@NonNull Context context, @Nullable AttributeSet attrs,
             int defStyleAttr) {
@@ -426,8 +435,10 @@ public class ZoomController extends FrameLayout {
         // but more accessible UX flow for changing zoom.
         if (enabled) {
             mTouchOverlay.setVisibility(View.GONE);
+            mToggleAutoShowDurationMs = TOGGLE_UI_AUTO_SHOW_DURATION_ACCESSIBILITY_MS;
         } else {
             mTouchOverlay.setVisibility(View.VISIBLE);
+            mToggleAutoShowDurationMs = TOGGLE_UI_AUTO_SHOW_DURATION_MS;
         }
     }
 
@@ -648,7 +659,7 @@ public class ZoomController extends FrameLayout {
      */
     private void resetToggleUiAutoShowRunnable() {
         removeToggleUiAutoShowRunnable();
-        postDelayed(mToggleUiAutoShowRunnable, TOGGLE_UI_AUTO_SHOW_DURATION_MS);
+        postDelayed(mToggleUiAutoShowRunnable, mToggleAutoShowDurationMs);
     }
 
     /**
