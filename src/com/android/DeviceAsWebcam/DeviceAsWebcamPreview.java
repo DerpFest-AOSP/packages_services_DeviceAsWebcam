@@ -35,6 +35,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraMetadata;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.IBinder;
@@ -347,7 +348,7 @@ public class DeviceAsWebcamPreview extends Activity {
         if (mLocalFgService == null || mLocalFgService.getCameraInfo() == null) {
             return;
         }
-
+        setToggleCameraContentDescription();
         mSelectorListItemDataList = createSelectorItemDataList();
 
         mSwitchCameraSelectorView.init(getLayoutInflater(), mSelectorListItemDataList);
@@ -606,12 +607,25 @@ public class DeviceAsWebcamPreview extends Activity {
         return hasBackCamera && hasFrontCamera;
     }
 
+    private void setToggleCameraContentDescription() {
+        if (mLocalFgService == null) {
+            return;
+        }
+        int lensFacing = mLocalFgService.getCameraInfo().getLensFacing();
+        CharSequence descr = getText(R.string.toggle_camera_button_description_front);
+        if (lensFacing == CameraMetadata.LENS_FACING_FRONT) {
+            descr = getText(R.string.toggle_camera_button_description_back);
+        }
+        mToggleCameraButton.setContentDescription(descr);
+    }
+
     private void toggleCamera() {
         if (mLocalFgService == null) {
             return;
         }
 
         mLocalFgService.toggleCamera();
+        setToggleCameraContentDescription();
         mFocusIndicator.setVisibility(View.GONE);
         mMotionEventToZoomRatioConverter.reset(mLocalFgService.getZoomRatio(),
                 mLocalFgService.getCameraInfo().getZoomRatioRange());
@@ -628,6 +642,7 @@ public class DeviceAsWebcamPreview extends Activity {
         }
 
         mLocalFgService.switchCamera(cameraId);
+        setToggleCameraContentDescription();
         mMotionEventToZoomRatioConverter.reset(mLocalFgService.getZoomRatio(),
                 mLocalFgService.getCameraInfo().getZoomRatioRange());
         setupZoomRatioSeekBar();
