@@ -1377,26 +1377,39 @@ public class CameraController {
      * <p>If the webcam stream doesn't exist, find the largest 16:9 supported output size which is
      * not larger than 1080p. If the webcam stream exists, find the largest supported output size
      * which matches the aspect ratio of the webcam stream size and is not larger than the
-     * display size or 1080p, whichever is smaller.
+     * display size, 1080p, or the webcam stream resolution, whichever is smallest.
      */
     public Size getSuitablePreviewSize() {
         if (mCameraId == null) {
             Log.e(TAG, "No camera is found on the device.");
             return null;
         }
-        Size s1080p = new Size(1920, 1080);
-        // PREVIEW is max(1080p, display size) - this is the max size of preview streams that is
-        // guaranteed to be supported, when another YUV stream (here the webcam stream) is also
-        // configured.
-        Size maxPreviewSize =
-                (1920 * 1080)  >
-                        (mDisplaySize.getWidth() * mDisplaySize.getHeight()) ?
-                                mDisplaySize : s1080p;
+
+        final Size s1080p = new Size(1920, 1080);
+        Size maxPreviewSize = s1080p;
+
+        // For PREVIEW, choose the smallest of webcam stream size, display size, and 1080p. This
+        // is guaranteed to be supported with a YUV stream.
+        if (mImgReader != null) {
+            maxPreviewSize = new Size(mImgReader.getWidth(), mImgReader.getHeight());
+        }
+
+        if (numPixels(maxPreviewSize) > numPixels(s1080p)) {
+            maxPreviewSize = s1080p;
+        }
+
+        if (numPixels(maxPreviewSize) > numPixels(mDisplaySize)) {
+            maxPreviewSize = mDisplaySize;
+        }
 
         // If webcam stream exists, find an output size matching its aspect ratio. Otherwise, find
         // an output size with 16:9 aspect ratio.
-        final Rational targetAspectRatio = new Rational(maxPreviewSize.getWidth(),
-                maxPreviewSize.getHeight());
+        final Rational targetAspectRatio;
+        if (mImgReader != null) {
+            targetAspectRatio = new Rational(mImgReader.getWidth(), mImgReader.getHeight());
+        } else {
+            targetAspectRatio = new Rational(s1080p.getWidth(), s1080p.getHeight());
+        }
 
         StreamConfigurationMap map = getCameraCharacteristic(mCameraId.mainCameraId,
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -1413,16 +1426,20 @@ public class CameraController {
             return null;
         }
 
+        Size finalMaxPreviewSize = maxPreviewSize;
         Size previewSize = Arrays.stream(outputSizes)
                 .filter(size -> targetAspectRatio.equals(
                         new Rational(size.getWidth(), size.getHeight())))
-                .filter(size -> size.getWidth() * size.getHeight()
-                        <= maxPreviewSize.getWidth() * maxPreviewSize.getHeight())
-                .max(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                .filter(size -> numPixels(size) <= numPixels(finalMaxPreviewSize))
+                .max(Comparator.comparingInt(CameraController::numPixels))
                 .orElse(null);
 
         Log.d(TAG, "Suitable preview size is " + previewSize);
         return previewSize;
+    }
+
+    private static int numPixels(Size size) {
+        return size.getWidth() * size.getHeight();
     }
 
     /**
