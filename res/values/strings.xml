@@ -26,7 +26,8 @@
     <!-- Accessibility description for Zoom Seek Bar -->
     <string name="zoom_seek_bar_description">Zoom Seek Bar</string>
     <!-- Accessibility description for the toggle camera image button -->
-    <string name="toggle_camera_button_description">Toggle camera direction</string>
+    <string name="toggle_camera_button_description_back">Switch to back camera</string>
+    <string name="toggle_camera_button_description_front">Switch to front camera</string>
     <!-- Notification  -->
     <string name="notif_channel_name">Foreground Service</string>
     <string name="notif_ticker">Webcam</string>
