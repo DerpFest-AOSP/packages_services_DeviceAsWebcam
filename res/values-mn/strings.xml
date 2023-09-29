@@ -24,12 +24,9 @@
     <string name="toggle_camera_button_description_back" msgid="771773649789638243">"Арын камер луу сэлгэх"</string>
     <string name="toggle_camera_button_description_front" msgid="5248457301141397342">"Урд талын камер луу сэлгэх"</string>
     <string name="notif_channel_name" msgid="9012392302161214874">"Нүүрэн талын үйлчилгээ"</string>
-    <!-- no translation found for notif_ticker (6895154246348754766) -->
-    <skip />
-    <!-- no translation found for notif_title (3788815976102922209) -->
-    <skip />
-    <!-- no translation found for notif_desc (1433178383086179212) -->
-    <skip />
+    <string name="notif_ticker" msgid="6895154246348754766">"Вебкамер"</string>
+    <string name="notif_title" msgid="3788815976102922209">"Вебкамер"</string>
+    <string name="notif_desc" msgid="1433178383086179212">"Урьдчилан үзэх болон вебкамерын гаралтыг тохируулахын тулд товшино уу"</string>
     <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
     <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
