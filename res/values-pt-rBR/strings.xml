@@ -21,15 +21,24 @@
     <string name="zoom_ratio_description" msgid="6492691624405841938">"Proporção de zoom"</string>
     <string name="zoom_ratio_button_current_description" msgid="4888275213379106225">"Proporção de zoom atual"</string>
     <string name="zoom_seek_bar_description" msgid="2820202610575014723">"Barra de busca de zoom"</string>
-    <string name="toggle_camera_button_description" msgid="1541382241327409654">"Alternar a direção da câmera"</string>
+    <string name="toggle_camera_button_description_back" msgid="771773649789638243">"Alternar para a câmera traseira"</string>
+    <string name="toggle_camera_button_description_front" msgid="5248457301141397342">"Alternar para a câmera frontal"</string>
     <string name="notif_channel_name" msgid="9012392302161214874">"Serviço em primeiro plano"</string>
-    <!-- no translation found for notif_ticker (6895154246348754766) -->
-    <skip />
-    <!-- no translation found for notif_title (3788815976102922209) -->
-    <skip />
-    <!-- no translation found for notif_desc (1433178383086179212) -->
-    <skip />
+    <string name="notif_ticker" msgid="6895154246348754766">"Webcam"</string>
+    <string name="notif_title" msgid="3788815976102922209">"Webcam"</string>
+    <string name="notif_desc" msgid="1433178383086179212">"Toque para visualizar e configurar a saída da webcam"</string>
     <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
     <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
+    <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
+    <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
     <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
+    <string name="list_item_text_back_camera" msgid="2734532140746580971">"Câmera traseira"</string>
+    <string name="list_item_text_front_camera" msgid="7273773310502952694">"Câmera frontal"</string>
+    <string name="list_item_text_standard_camera" msgid="4160445744347809472">"Câmera padrão"</string>
+    <string name="list_item_text_wide_angle_camera" msgid="818505418693187683">"Câmera grande angular"</string>
+    <string name="list_item_text_ultra_wide_camera" msgid="7938127230852040392">"Câmera ultra grande angular"</string>
+    <string name="list_item_text_telephoto_camera" msgid="9192886831007902304">"Câmera telefoto"</string>
+    <string name="list_item_text_other_camera" msgid="3479174298899742270">"Outra câmera"</string>
+    <string name="list_item_text_unknown_camera" msgid="5281152990521232984">"Câmera desconhecida"</string>
+    <string name="camera_options_list_description" msgid="7808155848873436115">"Opções de câmera disponíveis"</string>
 </resources>
