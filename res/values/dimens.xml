@@ -47,6 +47,7 @@
     <dimen name="zoom_ui_toggle_two_options_layout_width">76dp</dimen>
 
     <dimen name="focus_indicator_size">64dp</dimen>
+    <dimen name="focus_indicator_stroke_width">2dp</dimen>
 
     <dimen name="preview_margin_top_min">10dp</dimen>
 
