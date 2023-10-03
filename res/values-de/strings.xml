@@ -18,12 +18,9 @@
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_label" msgid="5899561994441982117">"Webcam-Dienst"</string>
     <string name="view_finder_description" msgid="5377029921915271921">"Sucher"</string>
-    <!-- no translation found for zoom_ratio_description (6492691624405841938) -->
-    <skip />
-    <!-- no translation found for zoom_ratio_button_current_description (4888275213379106225) -->
-    <skip />
-    <!-- no translation found for zoom_seek_bar_description (2820202610575014723) -->
-    <skip />
+    <string name="zoom_ratio_description" msgid="6492691624405841938">"Zoomverhältnis"</string>
+    <string name="zoom_ratio_button_current_description" msgid="4888275213379106225">"Aktuelles Zoomverhältnis"</string>
+    <string name="zoom_seek_bar_description" msgid="2820202610575014723">"Steuerleiste für Zoom"</string>
     <string name="toggle_camera_button_description_back" msgid="771773649789638243">"Zu Rückkamera wechseln"</string>
     <string name="toggle_camera_button_description_front" msgid="5248457301141397342">"Zu Frontkamera wechseln"</string>
     <string name="notif_channel_name" msgid="9012392302161214874">"Dienst im Vordergrund"</string>
