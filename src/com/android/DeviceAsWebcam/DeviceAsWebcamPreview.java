@@ -479,12 +479,19 @@ public class DeviceAsWebcamPreview extends Activity {
         ShapeDrawable shapeDrawable = new ShapeDrawable(ovalShape);
         Paint paint = shapeDrawable.getPaint();
         paint.setAntiAlias(true);
-        paint.setColor(getResources().getColor(R.color.focus_indicator_background_color, null));
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(3);
 
-        int circleRadius = indicatorSize / 2;
-        canvas.drawCircle(circleRadius, circleRadius, circleRadius - 1, paint);
+        int strokeWidth = getResources().getDimensionPixelSize(
+                R.dimen.focus_indicator_stroke_width);
+        paint.setStrokeWidth(strokeWidth);
+        paint.setColor(getResources().getColor(android.R.color.white, null));
+        int halfIndicatorSize = indicatorSize / 2;
+        canvas.drawCircle(halfIndicatorSize, halfIndicatorSize, halfIndicatorSize - strokeWidth,
+                paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(getResources().getColor(R.color.focus_indicator_background_color, null));
+        canvas.drawCircle(halfIndicatorSize, halfIndicatorSize, halfIndicatorSize - strokeWidth,
+                paint);
 
         return new BitmapDrawable(getResources(), bitmap);
     }
