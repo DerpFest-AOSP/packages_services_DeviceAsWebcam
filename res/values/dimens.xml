@@ -48,6 +48,8 @@
 
     <dimen name="focus_indicator_size">64dp</dimen>
 
+    <dimen name="preview_margin_top_min">10dp</dimen>
+
     <dimen name="camera_selector_top_bottom_margin">12dp</dimen>
     <dimen name="list_item_camera_item_start_margin">32dp</dimen>
     <dimen name="list_item_drawable_padding">8dp</dimen>
