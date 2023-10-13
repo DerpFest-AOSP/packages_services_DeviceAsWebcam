@@ -23,90 +23,109 @@
         android:id="@+id/zoom_ui_seekbar"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <SeekBar
             android:id="@+id/zoom_ui_seekbar_slider"
             android:layout_width="match_parent"
             android:layout_height="@dimen/zoom_ui_seekbar_touch_area_height"
-            android:contentDescription="@string/zoom_seek_bar_description"
             android:layout_gravity="center"
             android:background="@null"
+            android:contentDescription="@string/zoom_seek_bar_description"
             android:maxHeight="@dimen/zoom_ui_seekbar_half_height"
             android:mirrorForRtl="false"
             android:progressDrawable="@drawable/ic_zoom_ui_seekbar_progress"
             android:thumb="@drawable/ic_zoom_ui_seekbar_thumb"
             android:visibility="gone" />
+
         <com.android.DeviceAsWebcam.view.ZoomKnob
             android:id="@+id/zoom_ui_knob"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical|left"
-            android:textColor="@color/zoom_ui_toggle_bar_text_color"
             android:background="@drawable/ic_zoom_ui_knob_bg"
+            android:importantForAccessibility="no"
+            android:textColor="@color/zoom_ui_toggle_bar_text_color"
             android:visibility="gone" />
+
         <FrameLayout
             android:id="@+id/zoom_ui_toggle_options"
             android:layout_width="@dimen/zoom_ui_toggle_three_options_layout_width"
             android:layout_height="@dimen/zoom_ui_seekbar_touch_area_height"
             android:layout_gravity="center"
-            android:paddingStart="@dimen/zoom_ui_toggle_options_layout_padding_start"
-            android:paddingEnd="@dimen/zoom_ui_toggle_options_layout_padding_end"
             android:contentDescription="@string/zoom_ratio_description"
-            android:layoutDirection="ltr">
+            android:layoutDirection="ltr"
+            android:paddingStart="@dimen/zoom_ui_toggle_options_layout_padding_start"
+            android:paddingEnd="@dimen/zoom_ui_toggle_options_layout_padding_end">
+
             <ImageView
                 android:id="@+id/zoom_ui_toggle_background"
                 android:layout_width="@dimen/zoom_ui_toggle_three_options_layout_width"
                 android:layout_height="@dimen/zoom_ui_toggle_height"
                 android:layout_gravity="center"
-                android:background="@drawable/ic_zoom_ui_toggle_bg"/>
+                android:background="@drawable/ic_zoom_ui_toggle_bg" />
+
             <ImageView
                 android:id="@+id/zoom_ui_toggle_btn_selected"
                 android:layout_width="@dimen/zoom_ui_toggle_btn_size"
                 android:layout_height="@dimen/zoom_ui_toggle_btn_size"
                 android:layout_gravity="center"
                 android:background="@drawable/ic_zoom_ui_toggle_button_bg" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:layoutDirection="ltr"
                 android:orientation="horizontal">
+
                 <TextView
                     android:id="@+id/zoom_ui_toggle_option_low"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/zoom_ui_toggle_btn_size"
-                    android:layout_weight="1"
                     android:layout_gravity="center_vertical|left"
-                    android:clickable="false"
+                    android:layout_weight="1"
+                    android:accessibilityTraversalAfter="@+id/zoom_ui_toggle_options"
                     android:gravity="center"
+                    android:importantForAccessibility="yes"
                     android:maxLines="1"
                     android:textAlignment="center"
                     android:textColor="@color/zoom_ui_toggle_bar_text_color"
                     android:textSize="@dimen/zoom_ui_toggle_btn_text_size" />
+
                 <TextView
                     android:id="@+id/zoom_ui_toggle_option_middle"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/zoom_ui_toggle_btn_size"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:clickable="false"
+                    android:accessibilityTraversalAfter="@+id/zoom_ui_toggle_option_low"
                     android:gravity="center"
                     android:maxLines="1"
                     android:textAlignment="center"
                     android:textColor="@color/zoom_ui_toggle_bar_text_color"
                     android:textSize="@dimen/zoom_ui_toggle_btn_text_size" />
+
                 <TextView
                     android:id="@+id/zoom_ui_toggle_option_high"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/zoom_ui_toggle_btn_size"
                     android:layout_gravity="center_vertical|right"
                     android:layout_weight="1"
-                    android:clickable="false"
+                    android:accessibilityTraversalAfter="@+id/zoom_ui_toggle_option_middle"
                     android:gravity="center"
                     android:maxLines="1"
                     android:textAlignment="center"
                     android:textColor="@color/zoom_ui_toggle_bar_text_color"
                     android:textSize="@dimen/zoom_ui_toggle_btn_text_size" />
             </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/zoom_ui_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent"
+                android:importantForAccessibility="no" />
         </FrameLayout>
+
     </FrameLayout>
 </FrameLayout>
