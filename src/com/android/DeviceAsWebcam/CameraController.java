@@ -113,6 +113,7 @@ public class CameraController {
     private CameraId mFrontCameraId = null;
 
     private ImageReader mImgReader;
+    private Object mImgReaderLock = new Object();
     private ImageWriter mImageWriter;
 
     // current camera session state
@@ -288,31 +289,41 @@ public class CameraController {
             new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
+                    Image image;
+                    HardwareBuffer hardwareBuffer;
+                    long ts;
                     DeviceAsWebcamFgService service = mServiceWeak.get();
-                    if (service == null) {
-                        Log.e(TAG, "Service is dead, what ?");
-                        return;
-                    }
-                    if (mImageMap.size() >= MAX_BUFFERS) {
-                        Log.w(TAG, "Too many buffers acquired in onImageAvailable, returning");
-                        return;
-                    }
-                    // Get native HardwareBuffer from the latest image and send it to
-                    // the native layer for the encoder to process.
-                    // Acquire latest Image and get the HardwareBuffer
-                    Image image = reader.acquireLatestImage();
-                    if (VERBOSE) {
-                        Log.v(TAG, "Got acquired Image in onImageAvailable callback for reader "
-                                + reader);
-                    }
-                    if (image == null) {
-                        if (VERBOSE) {
-                            Log.e(TAG, "More images than MAX acquired ?");
+                    synchronized (mImgReaderLock) {
+                        if (reader != mImgReader) {
+                            return;
                         }
-                        return;
+                        if (service == null) {
+                            Log.e(TAG, "Service is dead, what ?");
+                            return;
+                        }
+                        if (mImageMap.size() >= MAX_BUFFERS) {
+                            Log.w(TAG, "Too many buffers acquired in onImageAvailable, returning");
+                            return;
+                        }
+                        // Get native HardwareBuffer from the next image (we should never
+                        // accumulate images since we're not doing any compute work on the
+                        // imageReader thread) and
+                        // send it to the native layer for the encoder to process.
+                        // Acquire latest Image and get the HardwareBuffer
+                        image = reader.acquireNextImage();
+                        if (VERBOSE) {
+                            Log.v(TAG, "Got acquired Image in onImageAvailable callback for reader "
+                                    + reader);
+                        }
+                        if (image == null) {
+                            if (VERBOSE) {
+                                Log.e(TAG, "More images than MAX acquired ?");
+                            }
+                            return;
+                        }
+                        ts = image.getTimestamp();
+                        hardwareBuffer = image.getHardwareBuffer();
                     }
-                    long ts = image.getTimestamp();
-                    HardwareBuffer hardwareBuffer = image.getHardwareBuffer();
                     mImageMap.put(ts, new ImageAndBuffer(image, hardwareBuffer));
                     // Callback into DeviceAsWebcamFgService to encode image
                     if ((!mStartCaptureWebcamStream.get()) || (service.nativeEncodeImage(
@@ -663,16 +674,18 @@ public class CameraController {
         synchronized (mSerializationLock) {
             long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN;
             mStreamConfigs = new StreamConfigs(mjpeg, width, height, fps);
-            if (mImgReader != null) {
-                mImgReader.close();
+            synchronized (mImgReaderLock) {
+                if (mImgReader != null) {
+                    mImgReader.close();
+                }
+                mImgReader = new ImageReader.Builder(width, height)
+                        .setMaxImages(MAX_BUFFERS)
+                        .setDefaultHardwareBufferFormat(HardwareBuffer.YCBCR_420_888)
+                        .setUsage(usage)
+                        .build();
+                mImgReader.setOnImageAvailableListener(mOnImageAvailableListener,
+                        mImageReaderHandler);
             }
-            mImgReader = new ImageReader.Builder(width, height)
-                    .setMaxImages(MAX_BUFFERS)
-                    .setDefaultHardwareBufferFormat(HardwareBuffer.YCBCR_420_888)
-                    .setUsage(usage)
-                    .build();
-            mImgReader.setOnImageAvailableListener(mOnImageAvailableListener,
-                    mImageReaderHandler);
         }
     }
 
@@ -730,18 +743,20 @@ public class CameraController {
         synchronized (mSerializationLock) {
             setupBitmaps(mStreamConfigs.width, mStreamConfigs.height);
             long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN;
-            if (mImgReader != null) {
-                mImgReader.close();
-            }
-            mImgReader = new ImageReader.Builder(
-                     mStreamConfigs.width, mStreamConfigs.height)
-                    .setMaxImages(MAX_BUFFERS)
-                    .setDefaultHardwareBufferFormat(HardwareBuffer.RGBA_8888)
-                    .setUsage(usage)
-                    .build();
+            synchronized (mImgReaderLock) {
+                if (mImgReader != null) {
+                    mImgReader.close();
+                }
+                mImgReader = new ImageReader.Builder(
+                         mStreamConfigs.width, mStreamConfigs.height)
+                        .setMaxImages(MAX_BUFFERS)
+                        .setDefaultHardwareBufferFormat(HardwareBuffer.RGBA_8888)
+                        .setUsage(usage)
+                        .build();
 
-            mImgReader.setOnImageAvailableListener(mOnImageAvailableListener,
-                    mImageReaderHandler);
+                mImgReader.setOnImageAvailableListener(mOnImageAvailableListener,
+                        mImageReaderHandler);
+            }
             mImageWriter = ImageWriter.newInstance(mImgReader.getSurface(), MAX_BUFFERS);
             // In effect, the webcam stream has started
             mImageWriterEventsExecutor = Executors.newScheduledThreadPool(1);
@@ -1059,10 +1074,12 @@ public class CameraController {
     public void startWebcamStreamingNoOffload() {
         mStartCaptureWebcamStream.set(true);
         synchronized (mSerializationLock) {
-            if (mImgReader == null) {
-                Log.e(TAG,
-                        "Webcam streaming requested without ImageReader initialized");
-                return;
+            synchronized (mImgReaderLock) {
+                if (mImgReader == null) {
+                    Log.e(TAG,
+                            "Webcam streaming requested without ImageReader initialized");
+                    return;
+                }
             }
             switch (mCurrentState) {
                 // Our current state could also be webcam streaming and we want to start the
@@ -1152,9 +1169,11 @@ public class CameraController {
             Log.v(TAG, "StopStreamingAltogether");
         }
         mCurrentState = CameraStreamingState.NO_STREAMING;
-        if (closeImageReader && mImgReader != null) {
-            mImgReader.close();
-            mImgReader = null;
+        synchronized (mImgReaderLock) {
+            if (closeImageReader && mImgReader != null) {
+                mImgReader.close();
+                mImgReader = null;
+            }
         }
         if (mCameraDevice != null) {
             mCameraDevice.close();
@@ -1234,7 +1253,7 @@ public class CameraController {
     }
 
     public void returnImage(long timestamp) {
-        ImageAndBuffer imageAndBuffer = mImageMap.remove(timestamp);
+        ImageAndBuffer imageAndBuffer = mImageMap.get(timestamp);
         if (imageAndBuffer == null) {
             Log.e(TAG, "Image with timestamp " + timestamp +
                     " was never encoded / already returned");
@@ -1242,6 +1261,7 @@ public class CameraController {
         }
         imageAndBuffer.buffer.close();
         imageAndBuffer.image.close();
+        mImageMap.remove(timestamp);
         if (VERBOSE) {
             Log.v(TAG, "Returned image " + timestamp);
         }
