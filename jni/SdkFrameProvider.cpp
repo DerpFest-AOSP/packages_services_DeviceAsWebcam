@@ -129,7 +129,7 @@ Status SdkFrameProvider::encodeImage(HardwareBufferDesc desc, jlong timestamp, j
     Buffer* producerBuffer = mBufferProducer->getFreeBufferIfAvailable();
     if (producerBuffer == nullptr) {
         // Not available so don't compress
-        ALOGW("%s: Producer buffer not available, returning", __FUNCTION__);
+        ALOGV("%s: Producer buffer not available, returning", __FUNCTION__);
         releaseHardwareBuffer(desc);
         return Status::ERROR;
     }
