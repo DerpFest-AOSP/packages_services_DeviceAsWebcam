@@ -64,7 +64,7 @@ const JNINativeMethod DeviceAsWebcamNative::sMethods[] = {
          (void*)com_android_DeviceAsWebcam_setupServicesAndStartListening},
         {"nativeOnDestroy", "()V", (void*)com_android_DeviceAsWebcam_onDestroy},
         {"shouldStartServiceNative", "()Z", (void*)com_android_DeviceAsWebcam_shouldStartService},
-        {"nativeEncodeImage", "(Landroid/hardware/HardwareBuffer;J)I",
+        {"nativeEncodeImage", "(Landroid/hardware/HardwareBuffer;JI)I",
          (void*)com_android_DeviceAsWebcam_encodeImage},
 };
 
@@ -88,8 +88,10 @@ int DeviceAsWebcamNative::registerJNIMethods(JNIEnv* e, JavaVM* jvm) {
 
 jint DeviceAsWebcamNative::com_android_DeviceAsWebcam_encodeImage(JNIEnv* env, jobject,
                                                                   jobject hardwareBuffer,
-                                                                  jlong timestamp) {
-    return DeviceAsWebcamServiceManager::kInstance->encodeImage(env, hardwareBuffer, timestamp);
+                                                                  jlong timestamp,
+                                                                  jint rotation) {
+    return DeviceAsWebcamServiceManager::kInstance->encodeImage(env, hardwareBuffer, timestamp,
+                                                                rotation);
 }
 
 jint DeviceAsWebcamNative::com_android_DeviceAsWebcam_setupServicesAndStartListening(JNIEnv* env,
