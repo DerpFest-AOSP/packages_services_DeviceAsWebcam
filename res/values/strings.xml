@@ -21,6 +21,8 @@
     <string name="view_finder_description">View finder</string>
     <!-- Accessibility description for the zoom ratio container -->
     <string name="zoom_ratio_description">Zoom ratio</string>
+    <!-- Accessibility description for the currently selected Zoom ratio button -->
+    <string name="zoom_ratio_button_current_description">Current Zoom Ratio</string>
     <!-- Accessibility description for Zoom Seek Bar -->
     <string name="zoom_seek_bar_description">Zoom Seek Bar</string>
     <!-- Accessibility description for the toggle camera image button -->
