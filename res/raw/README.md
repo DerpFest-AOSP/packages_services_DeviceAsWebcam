@@ -44,3 +44,29 @@ The details of the overridable files are as follows:
     }
   }
   ```
+
+- `ignored_v4l2_nodes.json`:
+
+  Linux UVC gadget driver mounts a V4L2 node that DeviceAsWebcam service
+  interacts with. To determine this node, DeviceAsWebcam service looks through
+  all `/dev/video*` nodes, looking for the first V4L2 node that advertises
+  `V4L2_CAP_VIDEO_OUTPUT` capability.
+
+  This will run into issues if a device has other V4L2 nodes mounted at
+  `/dev/video*` with `V4L2_CAP_VIDEO_OUTPUT` capability advertised for other
+  processing purposes.
+
+  `ignored_v4l2_nodes.json` provides a way for DeviceAsWebcam service to
+  ignore a predetermined set of V4L2 nodes.
+
+  The file format is as follows:
+
+  ```json
+  [
+      "/dev/video10",
+      "/dev/video12",
+      ...
+  ]
+  ```
+
+  Note that wildcard patterns are _not_ supported in `ignored_v4l2_nodes.json`.
