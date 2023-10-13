@@ -27,6 +27,7 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
+import android.hardware.camera2.params.MeteringRectangle;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
@@ -394,6 +395,19 @@ public class DeviceAsWebcamFgService extends Service {
                 return;
             }
             mCameraController.setWebcamStreamConfig(mjpeg, width, height, fps);
+        }
+    }
+
+    /**
+     * Trigger tap-to-focus operation for the specified metering rectangles.
+     */
+    public void tapToFocus(MeteringRectangle[] meteringRectangles) {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "tapToFocus was called after Service was destroyed");
+                return;
+            }
+            mCameraController.tapToFocus(meteringRectangles);
         }
     }
 
