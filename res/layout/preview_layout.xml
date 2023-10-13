@@ -36,4 +36,15 @@
         android:layout_marginBottom="128dp"
         android:contentDescription="@string/zoom_ratio_description" />
 
+    <ImageButton
+        android:id="@+id/toggle_camera_button"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="64dp"
+        android:layout_marginEnd="32dp"
+        android:visibility="invisible"
+        android:background="@drawable/ic_switch"
+        android:contentDescription="@string/toggle_camera_button_description" />
+
 </FrameLayout>

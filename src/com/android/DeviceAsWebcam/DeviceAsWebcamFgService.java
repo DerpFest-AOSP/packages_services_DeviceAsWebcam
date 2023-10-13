@@ -241,6 +241,35 @@ public class DeviceAsWebcamFgService extends Service {
         }
     }
 
+    /**
+     * Returns whether the device can support toggle camera function.
+     *
+     * @return {@code true} if the device has both back and front cameras. Otherwise, returns
+     * {@code false}.
+     */
+    public boolean canToggleCamera() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "canToggleCamera called after Service was destroyed.");
+                return false;
+            }
+            return mCameraController.canToggleCamera();
+        }
+    }
+
+    /**
+     * Toggles camera between the back and front cameras.
+     */
+    public void toggleCamera() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "toggleCamera called after Service was destroyed.");
+                return;
+            }
+            mCameraController.toggleCamera();
+        }
+    }
+
     @UsedByNative("DeviceAsWebcamNative.cpp")
     private void startStreaming() {
         synchronized (mServiceLock) {
