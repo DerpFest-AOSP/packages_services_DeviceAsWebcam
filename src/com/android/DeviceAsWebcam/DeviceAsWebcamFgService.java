@@ -33,6 +33,7 @@ import android.util.Log;
 import android.util.Size;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.android.DeviceAsWebcam.annotations.UsedByNative;
 
@@ -42,6 +43,8 @@ import java.util.Objects;
 public class DeviceAsWebcamFgService extends Service {
     private static final String TAG = "DeviceAsWebcamFgService";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
+    private static final String NOTIF_CHANNEL_ID = "WebcamService";
+    private static final int NOTIF_ID = 1;
 
     static {
         System.loadLibrary("jni_deviceAsWebcam");
@@ -54,6 +57,8 @@ public class DeviceAsWebcamFgService extends Service {
     private CameraController mCameraController;
     private Runnable mDestroyActivityCallback = null;
     private boolean mServiceRunning = false;
+    private NotificationCompat.Builder mNotificationBuilder;
+    private int mNotificationIcon;
 
 
 
@@ -93,11 +98,11 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     private String createNotificationChannel() {
-        NotificationChannel channel = new NotificationChannel("WebcamService",
-                "DeviceAsWebcamServiceFg", NotificationManager.IMPORTANCE_LOW);
+        NotificationChannel channel = new NotificationChannel(NOTIF_CHANNEL_ID,
+                getString(R.string.notif_channel_name), NotificationManager.IMPORTANCE_LOW);
         NotificationManager notMan = getSystemService(NotificationManager.class);
         Objects.requireNonNull(notMan).createNotificationChannel(channel);
-        return "WebcamService";
+        return NOTIF_CHANNEL_ID;
     }
 
     private void startForegroundWithNotification() {
@@ -105,12 +110,20 @@ public class DeviceAsWebcamFgService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, notificationIntent,
                 PendingIntent.FLAG_MUTABLE);
         String channelId = createNotificationChannel();
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId);
-        Notification notif = builder.setOngoing(true).setPriority(
-                NotificationManager.IMPORTANCE_DEFAULT).setCategory(
-                Notification.CATEGORY_SERVICE).setContentIntent(pendingIntent).setSmallIcon(
-                R.drawable.ic_root_webcam).build();
-        startForeground(/* id= */ 1, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
+        mNotificationIcon = R.drawable.ic_notif_line;
+        mNotificationBuilder = new NotificationCompat.Builder(this, channelId)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setContentIntent(pendingIntent)
+                .setContentText(getString(R.string.notif_desc))
+                .setContentTitle(getString(R.string.notif_title))
+                .setOngoing(true)
+                .setPriority(NotificationManager.IMPORTANCE_MIN)
+                .setShowWhen(false)
+                .setSmallIcon(mNotificationIcon)
+                .setTicker(getString(R.string.notif_ticker))
+                .setVisibility(Notification.VISIBILITY_PUBLIC);
+        Notification notif = mNotificationBuilder.build();
+        startForeground(NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
     }
 
     private int setupServicesAndStartListening() {
@@ -293,6 +306,28 @@ public class DeviceAsWebcamFgService extends Service {
         }
     }
 
+    private void updateNotification(boolean isStreaming) {
+        int icon; // animated icon
+        if (isStreaming) {
+            icon = R.drawable.ic_notif_streaming;
+            // last frame of ic_notif_streaming
+            mNotificationIcon = R.drawable.ic_notif_filled;
+        } else {
+            icon = R.drawable.ic_notif_idle;
+            // last frame of ic_notif_idle
+            mNotificationIcon = R.drawable.ic_notif_line;
+        }
+        mNotificationBuilder.setSmallIcon(icon);
+        NotificationManagerCompat.from(mContext).notify(NOTIF_ID, mNotificationBuilder.build());
+
+        // Update notification after 1s to make the last frame sticky. This prevents the animation
+        // from re-running if the notification icon is redrawn.
+        getMainThreadHandler().postDelayed(() -> {
+            mNotificationBuilder.setSmallIcon(mNotificationIcon);
+            NotificationManagerCompat.from(mContext).notify(NOTIF_ID, mNotificationBuilder.build());
+        }, 500);
+    }
+
     @UsedByNative("DeviceAsWebcamNative.cpp")
     private void startStreaming() {
         synchronized (mServiceLock) {
@@ -301,6 +336,7 @@ public class DeviceAsWebcamFgService extends Service {
                 return;
             }
             mCameraController.startWebcamStreaming();
+            updateNotification(/*isStreaming*/ true);
         }
     }
 
@@ -323,6 +359,7 @@ public class DeviceAsWebcamFgService extends Service {
                 return;
             }
             mCameraController.stopWebcamStreaming();
+            updateNotification(/*isStreaming*/ false);
         }
     }
 
