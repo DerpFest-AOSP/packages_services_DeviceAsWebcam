@@ -233,6 +233,17 @@ public class ZoomController extends FrameLayout {
         );
     }
 
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        // Force disable these controls so that AccessibilityTraversalAfter won't take effects on
+        // these controls when they are disabled.
+        mToggleUiOptions.setEnabled(enabled);
+        mToggleOptionLow.setEnabled(enabled);
+        mToggleOptionMiddle.setEnabled(enabled);
+        mToggleOptionHigh.setEnabled(enabled);
+    }
+
     /**
      * Sets the supported zoom ratio range to the controller.
      */
