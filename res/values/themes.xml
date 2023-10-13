@@ -15,11 +15,7 @@
   ~ limitations under the License.
   -->
 <resources>
-    <color name="icActive">#FFFFFFFF</color>
-    <color name="icFocused">#DDFFFFFF</color>
-    <color name="icPressed">#AAFFFFFF</color>
-
-    <color name="ripple">@android:color/system_accent1_600</color>
-    <color name="bg">@android:color/system_neutral2_900</color>
-    <color name="button">@android:color/system_accent1_400</color>
+    <style name="ActivityTheme">
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
 </resources>
