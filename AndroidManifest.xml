@@ -20,6 +20,7 @@
         </receiver>
 
         <activity android:name=".DeviceAsWebcamPreview"
+            android:excludeFromRecents="true"
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/app_label">

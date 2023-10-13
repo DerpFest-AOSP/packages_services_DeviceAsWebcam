@@ -266,6 +266,33 @@ public class DeviceAsWebcamFgService extends Service {
         }
     }
 
+    /**
+     * Sets a {@link CameraController.RotationUpdateListener} to monitor the device rotation
+     * changes.
+     */
+    public void setRotationUpdateListener(CameraController.RotationUpdateListener listener) {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "setRotationUpdateListener called after Service was destroyed.");
+                return;
+            }
+            mCameraController.setRotationUpdateListener(listener);
+        }
+    }
+
+    /**
+     * Returns current rotation degrees value.
+     */
+    public int getCurrentRotation() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "getCurrentRotation was called after Service was destroyed");
+                return 0;
+            }
+            return mCameraController.getCurrentRotation();
+        }
+    }
+
     @UsedByNative("DeviceAsWebcamNative.cpp")
     private void startStreaming() {
         synchronized (mServiceLock) {
