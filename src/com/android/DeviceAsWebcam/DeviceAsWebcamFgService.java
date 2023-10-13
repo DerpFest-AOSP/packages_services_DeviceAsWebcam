@@ -60,10 +60,11 @@ public class DeviceAsWebcamFgService extends Service {
     private CameraController mCameraController;
     private Runnable mDestroyActivityCallback = null;
     private boolean mServiceRunning = false;
+
     private NotificationCompat.Builder mNotificationBuilder;
     private int mNotificationIcon;
-
-
+    private int mNextNotificationIcon;
+    private boolean mNotificationUpdatePending;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -102,7 +103,7 @@ public class DeviceAsWebcamFgService extends Service {
 
     private String createNotificationChannel() {
         NotificationChannel channel = new NotificationChannel(NOTIF_CHANNEL_ID,
-                getString(R.string.notif_channel_name), NotificationManager.IMPORTANCE_LOW);
+                getString(R.string.notif_channel_name), NotificationManager.IMPORTANCE_DEFAULT);
         NotificationManager notMan = getSystemService(NotificationManager.class);
         Objects.requireNonNull(notMan).createNotificationChannel(channel);
         return NOTIF_CHANNEL_ID;
@@ -113,14 +114,15 @@ public class DeviceAsWebcamFgService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, notificationIntent,
                 PendingIntent.FLAG_MUTABLE);
         String channelId = createNotificationChannel();
-        mNotificationIcon = R.drawable.ic_notif_line;
+        mNextNotificationIcon = mNotificationIcon = R.drawable.ic_notif_line;
         mNotificationBuilder = new NotificationCompat.Builder(this, channelId)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentIntent(pendingIntent)
                 .setContentText(getString(R.string.notif_desc))
                 .setContentTitle(getString(R.string.notif_title))
+                .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
                 .setOngoing(true)
-                .setPriority(NotificationManager.IMPORTANCE_MIN)
+                .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
                 .setShowWhen(false)
                 .setSmallIcon(mNotificationIcon)
                 .setTicker(getString(R.string.notif_ticker))
@@ -148,6 +150,8 @@ public class DeviceAsWebcamFgService extends Service {
             if (VERBOSE) {
                 Log.v(TAG, "Destroyed fg service");
             }
+            // Ensure that the service notification is removed.
+            NotificationManagerCompat.from(mContext).cancelAll();
         }
         super.onDestroy();
     }
@@ -320,25 +324,70 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     private void updateNotification(boolean isStreaming) {
-        int icon; // animated icon
+        int transitionIcon; // animated icon
+        int finalIcon; // static icon
         if (isStreaming) {
-            icon = R.drawable.ic_notif_streaming;
+            transitionIcon = R.drawable.ic_notif_streaming;
             // last frame of ic_notif_streaming
-            mNotificationIcon = R.drawable.ic_notif_filled;
+            finalIcon = R.drawable.ic_notif_filled;
         } else {
-            icon = R.drawable.ic_notif_idle;
+            transitionIcon = R.drawable.ic_notif_idle;
             // last frame of ic_notif_idle
-            mNotificationIcon = R.drawable.ic_notif_line;
+            finalIcon = R.drawable.ic_notif_line;
         }
-        mNotificationBuilder.setSmallIcon(icon);
-        NotificationManagerCompat.from(mContext).notify(NOTIF_ID, mNotificationBuilder.build());
 
-        // Update notification after 1s to make the last frame sticky. This prevents the animation
-        // from re-running if the notification icon is redrawn.
-        getMainThreadHandler().postDelayed(() -> {
-            mNotificationBuilder.setSmallIcon(mNotificationIcon);
+        synchronized (mServiceLock) {
+            if (finalIcon == mNotificationIcon) {
+                // Notification already is desired state.
+                return;
+            }
+            if (transitionIcon == mNotificationIcon) {
+                // Notification currently animating to finalIcon.
+                // Set next state to desired steady state icon.
+                mNextNotificationIcon = finalIcon;
+                return;
+            }
+
+            if (mNotificationUpdatePending) {
+                // Notification animating to some other icon. Set the next icon to the new
+                // transition icon and let the update runnable handle the actual updates.
+                mNextNotificationIcon = transitionIcon;
+                return;
+            }
+
+            // Notification is in a steady state. Update notification to the new icon.
+            mNextNotificationIcon = transitionIcon;
+            updateNotificationToNextIcon();
+        }
+    }
+
+    private void updateNotificationToNextIcon() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                return;
+            }
+
+            mNotificationBuilder.setSmallIcon(mNextNotificationIcon);
             NotificationManagerCompat.from(mContext).notify(NOTIF_ID, mNotificationBuilder.build());
-        }, 500);
+            mNotificationIcon = mNextNotificationIcon;
+
+            boolean notifNeedsUpdate = false;
+            if (mNotificationIcon == R.drawable.ic_notif_streaming) {
+                // last frame of ic_notif_streaming
+                mNextNotificationIcon = R.drawable.ic_notif_filled;
+                notifNeedsUpdate = true;
+            } else if (mNotificationIcon == R.drawable.ic_notif_idle) {
+                // last frame of ic_notif_idle
+                mNextNotificationIcon = R.drawable.ic_notif_line;
+                notifNeedsUpdate = true;
+            }
+            mNotificationUpdatePending = notifNeedsUpdate;
+            if (notifNeedsUpdate) {
+                // Run this method again after 500ms to update the notification to steady
+                // state icon
+                getMainThreadHandler().postDelayed(this::updateNotificationToNextIcon, 500);
+            }
+        }
     }
 
     @UsedByNative("DeviceAsWebcamNative.cpp")
