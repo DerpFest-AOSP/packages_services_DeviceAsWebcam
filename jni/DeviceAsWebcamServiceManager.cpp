@@ -19,14 +19,39 @@
 #include <UVCProvider.h>
 #include <android/hardware_buffer_jni.h>
 #include <log/log.h>
+#include <unordered_set>
 
 namespace android {
 namespace webcam {
 
+namespace {
+/**
+ * Copies the given javaArr to a std::unordered_set<std::string>. javaArr must be of type String[].
+ */
+std::unordered_set<std::string> stringSetFromJavaArray(jobjectArray javaArr) {
+    JNIEnv* env = DeviceAsWebcamNative::getJNIEnvOrAbort();
+
+    std::unordered_set<std::string> ret = {};
+    jsize len = env->GetArrayLength(javaArr);
+    for (jsize i = 0; i < len; i++) {
+        jstring jStr = (jstring) env->GetObjectArrayElement(javaArr, i);
+
+        const jsize strLen = env->GetStringUTFLength(jStr);
+        const char* buf = env->GetStringUTFChars(jStr, NULL);
+
+        ret.emplace(buf, strLen); // std::string makes a copy of the buffer
+
+        env->ReleaseStringUTFChars(jStr, buf);
+        env->DeleteLocalRef(jStr);
+    }
+    return ret;
+}
+} // anonymous namespace
+
 DeviceAsWebcamServiceManager* DeviceAsWebcamServiceManager::kInstance =
         new DeviceAsWebcamServiceManager();
 
-bool DeviceAsWebcamServiceManager::shouldStartService() {
+bool DeviceAsWebcamServiceManager::shouldStartService(jobjectArray jIgnoredNodes) {
     ALOGV("%s", __FUNCTION__);
     std::lock_guard<std::mutex> l(mSerializationLock);
     if (mServiceRunning) {
@@ -34,17 +59,22 @@ bool DeviceAsWebcamServiceManager::shouldStartService() {
         return false;
     }
 
-    return (UVCProvider::getVideoNode().length() != 0);
+    std::unordered_set<std::string> ignoredNodes = stringSetFromJavaArray(jIgnoredNodes);
+    return (UVCProvider::getVideoNode(ignoredNodes).length() != 0);
 }
 
-int DeviceAsWebcamServiceManager::setupServicesAndStartListening(JNIEnv* env, jobject javaService) {
+int DeviceAsWebcamServiceManager::setupServicesAndStartListening(JNIEnv* env, jobject javaService,
+                                                                 jobjectArray jIgnoredNodes) {
     ALOGV("%s", __FUNCTION__);
     std::lock_guard<std::mutex> l(mSerializationLock);
     if (mUVCProvider == nullptr) {
         mUVCProvider = std::make_shared<UVCProvider>();
     }
+
+    std::unordered_set<std::string> ignoredNodes = stringSetFromJavaArray(jIgnoredNodes);
     // Set up UVC stack
-    if ((mUVCProvider->init() != Status::OK) || (mUVCProvider->startService() != Status::OK)) {
+    if ((mUVCProvider->init() != Status::OK) ||
+        (mUVCProvider->startService(ignoredNodes) != Status::OK)) {
         ALOGE("%s: Unable to init/ start service", __FUNCTION__);
         return -1;
     }
