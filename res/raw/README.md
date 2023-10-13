@@ -45,6 +45,44 @@ The details of the overridable files are as follows:
   }
   ```
 
+- `physical_camera_zoom_ratio_ranges.json`:
+
+  This file contains the mapping of physical cameras to their zoom ratio ranges.
+  When provided, DeviceAsWebcam will use this zoom ratio range instead of that
+  retrieved from camera characteristics. This is useful when the zoom ratio of the
+  physical camera listed in `physical_camera_mapping.json` is different from the
+  logical camera it belongs to. Providing this mapping is optional, and only used
+  if `physical_camera_mapping,json` contains a corresponding entry. The format of
+  the mapping is:
+
+  ```json
+  {
+    "<logical-camera-id-1>" : {
+      "<physical-camera-id-1>" : ["<zoom-ratio-range-lower-1>", "<zoom-ratio-range-upper-1>"],
+      "<physical-camera-id-2>" : ["<zoom-ratio-range-lower-2>", "<zoom-ratio-range-upper-2>"],
+      ...
+    },
+    "<logical-camera-id-2>" : {
+      "<physical-camera-id-3>" : ["<zoom-ratio-range-lower-3>", "<zoom-ratio-range-upper-3>"],
+      "<physical-camera-id-4>" : ["<zoom-ratio-range-lower-4>", "<zoom-ratio-range-upper-4>"],
+      ...
+    },
+    ...
+  }
+  ```
+
+  For example, if a vendor would like to custom 2 possible physical streams'
+  supported zoom ratio ranges with camera ids 3 and 4 for the back logical
+  camera the mapping could be:
+  ```json
+  {
+    "0" : {
+      "3" : ["1.0", "5.0"],
+      "4" : ["1.0", "8.0"]
+    }
+  }
+  ```
+
 - `ignored_v4l2_nodes.json`:
 
   Linux UVC gadget driver mounts a V4L2 node that DeviceAsWebcam service

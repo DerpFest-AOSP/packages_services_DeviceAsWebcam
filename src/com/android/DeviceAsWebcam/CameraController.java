@@ -498,15 +498,19 @@ public class CameraController {
         CameraCharacteristics physicalChars = getCameraCharacteristicsOrNull(
                 cameraId.physicalCameraId != null ? cameraId.physicalCameraId
                         : cameraId.mainCameraId);
+        // Retrieves the physical camera zoom ratio range from the vendor camera prefs.
+        Range<Float> zoomRatioRange = mRroCameraInfo.getPhysicalCameraZoomRatioRange(cameraId);
+        // Retrieves the physical camera zoom ratio range if no custom data is found.
+        if (zoomRatioRange == null) {
+            zoomRatioRange = getCameraCharacteristic(physicalChars,
+                    CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+        }
         // We should consider using a builder pattern here if the parameters grow a lot.
         return new CameraInfo(
                 new CameraId(cameraId.mainCameraId, cameraId.physicalCameraId),
                 getCameraCharacteristic(chars, CameraCharacteristics.LENS_FACING),
                 getCameraCharacteristic(chars, CameraCharacteristics.SENSOR_ORIENTATION),
-                // TODO: b/269644311 Need to find a way to correct the available zoom ratio range
-                //  when a specific physical camera is used.
-                getCameraCharacteristic(physicalChars,
-                        CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE),
+                zoomRatioRange,
                 getCameraCharacteristic(chars,
                         CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE),
                 isFacePrioritySupported(chars),
