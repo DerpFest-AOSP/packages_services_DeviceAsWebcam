@@ -18,6 +18,7 @@ package com.android.DeviceAsWebcam;
 
 import android.content.Context;
 import android.util.ArrayMap;
+import android.util.JsonReader;
 import android.util.Log;
 import android.util.Range;
 
@@ -58,8 +59,10 @@ public class VendorCameraPrefs {
         }
     }
 
-    public VendorCameraPrefs(ArrayMap<String, List<PhysicalCameraInfo>> logicalToPhysicalMap) {
+    public VendorCameraPrefs(ArrayMap<String, List<PhysicalCameraInfo>> logicalToPhysicalMap,
+            List<String> ignoredCameraList) {
         mLogicalToPhysicalMap = logicalToPhysicalMap;
+        mIgnoredCameraList = ignoredCameraList;
     }
 
     @Nullable
@@ -91,10 +94,19 @@ public class VendorCameraPrefs {
         return null;
     }
 
+    /**
+     * Returns the ignored camera list.
+     */
+    public List<String> getIgnoredCameraList() {
+        return mIgnoredCameraList;
+    }
+
     // logical camera -> PhysicalCameraInfo. The list of PhysicalCameraInfos
     // is in order of preference for the physical streams that must be used by
     // DeviceAsWebcam service.
     private final ArrayMap<String, List<PhysicalCameraInfo>> mLogicalToPhysicalMap;
+    // The ignored camera list.
+    private final List<String> mIgnoredCameraList;
 
     /**
      * Converts an InputStream into a String
@@ -120,7 +132,8 @@ public class VendorCameraPrefs {
         ArrayMap<String, Range<Float>> zoomRatioRangeInfo = getZoomRatioRangeInfo(context);
         ArrayMap<String, List<PhysicalCameraInfo>> logicalToPhysicalMap =
                 createLogicalToPhysicalMap(context, zoomRatioRangeInfo);
-        return new VendorCameraPrefs(logicalToPhysicalMap);
+        List<String> ignoredCameraList = getIgnoredCameralist(context);
+        return new VendorCameraPrefs(logicalToPhysicalMap, ignoredCameraList);
     }
 
     /**
@@ -189,5 +202,25 @@ public class VendorCameraPrefs {
             Log.e(TAG, "Failed to parse JSON", e);
         }
         return zoomRatioRangeInfo;
+    }
+
+    /**
+     * Retrieves the ignored camera list from the input which is expected to be a valid JSON stream.
+     */
+    private static List<String> getIgnoredCameralist(Context context) {
+        List<String> ignoredCameras = new ArrayList<>();
+        try(InputStream in = context.getResources().openRawResource(R.raw.ignored_cameras);
+            JsonReader jsonReader = new JsonReader(new InputStreamReader(in))) {
+            jsonReader.beginArray();
+            while (jsonReader.hasNext()) {
+                String node = jsonReader.nextString();
+                ignoredCameras.add(node);
+            }
+            jsonReader.endArray();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to parse JSON. Running with a partial ignored camera list", e);
+        }
+
+        return ignoredCameras;
     }
 }
