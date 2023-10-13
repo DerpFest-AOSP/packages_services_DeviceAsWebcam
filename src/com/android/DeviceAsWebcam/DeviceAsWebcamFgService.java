@@ -16,7 +16,6 @@
 
 package com.android.DeviceAsWebcam;
 
-import android.annotation.Nullable;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -32,6 +31,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.Size;
 
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -39,6 +39,7 @@ import com.android.DeviceAsWebcam.annotations.UsedByNative;
 import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -241,6 +242,34 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     /**
+     * Returns the available {@link CameraId} list.
+     */
+    @Nullable
+    public List<CameraId> getAvailableCameraIds() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "getAvailableCameraIds called after Service was destroyed.");
+                return null;
+            }
+            return mCameraController.getAvailableCameraIds();
+        }
+    }
+
+    /**
+     * Returns the {@link CameraInfo} for the specified camera id.
+     */
+    @Nullable
+    public CameraInfo getOrCreateCameraInfo(CameraId cameraId) {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "getCameraInfo called after Service was destroyed.");
+                return null;
+            }
+            return mCameraController.getOrCreateCameraInfo(cameraId);
+        }
+    }
+
+    /**
      * Sets the new zoom ratio setting to the working camera.
      */
     public void setZoomRatio(float zoomRatio) {
@@ -267,22 +296,6 @@ public class DeviceAsWebcamFgService extends Service {
     }
 
     /**
-     * Returns whether the device can support toggle camera function.
-     *
-     * @return {@code true} if the device has both back and front cameras. Otherwise, returns
-     * {@code false}.
-     */
-    public boolean canToggleCamera() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "canToggleCamera called after Service was destroyed.");
-                return false;
-            }
-            return mCameraController.canToggleCamera();
-        }
-    }
-
-    /**
      * Toggles camera between the back and front cameras.
      */
     public void toggleCamera() {
@@ -292,6 +305,19 @@ public class DeviceAsWebcamFgService extends Service {
                 return;
             }
             mCameraController.toggleCamera();
+        }
+    }
+
+    /**
+     * Switches current working camera to specific one.
+     */
+    public void switchCamera(CameraId cameraId) {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "switchCamera called after Service was destroyed.");
+                return;
+            }
+            mCameraController.switchCamera(cameraId);
         }
     }
 

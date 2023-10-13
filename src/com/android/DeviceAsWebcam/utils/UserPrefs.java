@@ -16,6 +16,7 @@
 
 package com.android.DeviceAsWebcam.utils;
 
+import android.annotation.Nullable;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -57,7 +58,8 @@ public class UserPrefs {
      * Read and return the stored cameraId, or return {@code defaultCameraId} if no cameraId is
      * stored.
      */
-    public synchronized String fetchCameraId(String defaultCameraId) {
+    @Nullable
+    public synchronized String fetchCameraId(@Nullable String defaultCameraId) {
         return mPrefs.getString(mContext.getString(R.string.prefs_camera_id_key), defaultCameraId);
     }
 
@@ -66,6 +68,42 @@ public class UserPrefs {
      */
     public synchronized void storeCameraId(String cameraId) {
         mPrefsEditor.putString(mContext.getString(R.string.prefs_camera_id_key), cameraId);
+        mPrefsEditor.apply();
+    }
+
+    /**
+     * Read and return the stored back cameraId, or return {@code defaultCameraId} if no cameraId]
+     * is stored.
+     */
+    @Nullable
+    public synchronized String fetchBackCameraId(@Nullable String defaultCameraId) {
+        return mPrefs.getString(mContext.getString(R.string.prefs_back_camera_id_key),
+                defaultCameraId);
+    }
+
+    /**
+     * Write back cameraId to SharedPrefs.
+     */
+    public synchronized void storeBackCameraId(String cameraId) {
+        mPrefsEditor.putString(mContext.getString(R.string.prefs_back_camera_id_key), cameraId);
+        mPrefsEditor.apply();
+    }
+
+    /**
+     * Read and return the stored front cameraId, or return {@code defaultCameraId} if no cameraId]
+     * is stored.
+     */
+    @Nullable
+    public synchronized String fetchFrontCameraId(@Nullable String defaultCameraId) {
+        return mPrefs.getString(mContext.getString(R.string.prefs_front_camera_id_key),
+                defaultCameraId);
+    }
+
+    /**
+     * Write front cameraId to SharedPrefs.
+     */
+    public synchronized void storeFrontCameraId(String cameraId) {
+        mPrefsEditor.putString(mContext.getString(R.string.prefs_front_camera_id_key), cameraId);
         mPrefsEditor.apply();
     }
 }

@@ -46,15 +46,15 @@ public class VendorCameraPrefs {
 
     public static class PhysicalCameraInfo {
         public final String physicalCameraId;
-        // String label which might help UI labelling while cycling through camera ids.
-        public final String label;
+        // Camera category which might help UI labelling while cycling through camera ids.
+        public final CameraCategory cameraCategory;
         @Nullable
         public final Range<Float> zoomRatioRange;
 
-        PhysicalCameraInfo(String physicalCameraIdI, String labelI,
+        PhysicalCameraInfo(String physicalCameraIdI, CameraCategory cameraCategoryI,
                 @Nullable Range<Float> zoomRatioRangeI) {
             physicalCameraId = physicalCameraIdI;
-            label = labelI;
+            cameraCategory = cameraCategoryI;
             zoomRatioRange = zoomRatioRangeI;
         }
     }
@@ -79,6 +79,24 @@ public class VendorCameraPrefs {
      */
     @Nullable
     public Range<Float> getPhysicalCameraZoomRatioRange(CameraId cameraId) {
+        PhysicalCameraInfo physicalCameraInfo = getPhysicalCameraInfo(cameraId);
+        return physicalCameraInfo != null ? physicalCameraInfo.zoomRatioRange : null;
+    }
+
+    /**
+     * Retrieves the {@link CameraCategory} if it is specified by the vendor camera prefs data.
+     */
+    public CameraCategory getCameraCategory(CameraId cameraId) {
+        PhysicalCameraInfo physicalCameraInfo = getPhysicalCameraInfo(cameraId);
+        return physicalCameraInfo != null ? physicalCameraInfo.cameraCategory
+                : CameraCategory.UNKNOWN;
+    }
+
+    /**
+     * Returns the {@link PhysicalCameraInfo} corresponding to the specified camera id. Returns
+     * null if no item can be found.
+     */
+    private PhysicalCameraInfo getPhysicalCameraInfo(CameraId cameraId) {
         List<PhysicalCameraInfo> physicalCameraInfos = getPhysicalCameraInfos(
                 cameraId.mainCameraId);
 
@@ -86,7 +104,7 @@ public class VendorCameraPrefs {
             for (PhysicalCameraInfo physicalCameraInfo : physicalCameraInfos) {
                 if (Objects.equals(physicalCameraInfo.physicalCameraId,
                         cameraId.physicalCameraId)) {
-                    return physicalCameraInfo.zoomRatioRange;
+                    return physicalCameraInfo;
                 }
             }
         }
@@ -155,9 +173,9 @@ public class VendorCameraPrefs {
                 List<PhysicalCameraInfo> physicalCameraIds = new ArrayList<>();
                 for (String physCam : physicalCameraObj.keySet()) {
                     String identifier = CameraId.createIdentifier(logCam, physCam);
-                    physicalCameraIds.add(
-                            new PhysicalCameraInfo(physCam, physicalCameraObj.getString(physCam),
-                                    zoomRatioRangeInfo.get(identifier)));
+                    physicalCameraIds.add(new PhysicalCameraInfo(physCam,
+                            convertLabelToCameraCategory(physicalCameraObj.getString(physCam)),
+                            zoomRatioRangeInfo.get(identifier)));
                 }
                 logicalToPhysicalMap.put(logCam, physicalCameraIds);
             }
@@ -165,6 +183,20 @@ public class VendorCameraPrefs {
             Log.e(TAG, "Failed to parse JSON", e);
         }
         return logicalToPhysicalMap;
+    }
+
+    /**
+     * Converts the label string to corresponding {@link CameraCategory}.
+     */
+    private static CameraCategory convertLabelToCameraCategory(String label) {
+        return switch (label) {
+            case "W" -> CameraCategory.WIDE_ANGLE;
+            case "UW" -> CameraCategory.ULTRA_WIDE;
+            case "T" -> CameraCategory.TELEPHOTO;
+            case "S" -> CameraCategory.STANDARD;
+            case "O" -> CameraCategory.OTHER;
+            default -> CameraCategory.UNKNOWN;
+        };
     }
 
     /**
