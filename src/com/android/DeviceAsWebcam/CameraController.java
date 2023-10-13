@@ -646,17 +646,24 @@ public class CameraController {
 
     /**
      * Toggles camera between the back and front cameras.
+     *
+     * The new camera is set up and configured asynchronously, but the camera state (as queried by
+     * other methods in {@code CameraController}) is updated synchronously. So querying camera
+     * state and metadata immediately after this method returns, returns values associated with the
+     * new camera, even if the new camera hasn't started streaming.
      */
     public void toggleCamera() {
+        synchronized (mSerializationLock) {
+            if (mCameraId.equals(mBackCameraId)) {
+                mCameraId = mFrontCameraId;
+            } else {
+                mCameraId = mBackCameraId;
+            }
+            mCameraInfo = mCameraInfoMap.get(mCameraId);
+        }
         mServiceEventsExecutor.execute(() -> {
             synchronized (mSerializationLock) {
                 mCaptureSession.close();
-                if (mCameraId.equals(mBackCameraId)) {
-                    mCameraId = mFrontCameraId;
-                } else {
-                    mCameraId = mBackCameraId;
-                }
-                mCameraInfo = mCameraInfoMap.get(mCameraId);
                 switch (mCurrentState) {
                     case WEBCAM_STREAMING:
                         setupWebcamOnlyStreamAndOpenCameraLocked();
