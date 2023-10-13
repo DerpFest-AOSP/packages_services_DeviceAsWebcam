@@ -17,4 +17,9 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- App title of DeviceAsWebcam [CHAR LIMIT=32] -->
     <string name="app_label">Webcam Service</string>
+    <!-- Accessibility description for the view finder texture view -->
+    <string name="view_finder_description">View finder</string>
+    <!-- Accessibility description for the zoom ratio value text view -->
+    <string name="zoom_ratio_description">Zoom ratio value</string>
+    <string name="zoom_ratio">%.2fx</string>
 </resources>
