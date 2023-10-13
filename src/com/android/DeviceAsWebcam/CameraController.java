@@ -21,6 +21,7 @@ import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
@@ -40,11 +41,11 @@ import androidx.annotation.NonNull;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class controls the operation of the camera - primarily through the public calls
@@ -184,6 +185,8 @@ public class CameraController {
                     }
                 }
             };
+
+    private volatile float mZoomRatio = 1.0f;
 
     public CameraController(Context context, WeakReference<DeviceAsWebcamFgService> serviceWeak) {
         mContext = context;
@@ -424,6 +427,7 @@ public class CameraController {
         mWebcamOutputConfiguration = null;
         mPreviewOutputConfiguration = null;
         mCurrentState = NO_STREAMING;
+        mZoomRatio = 1.0f;
     }
 
     public void stopWebcamStreaming() {
@@ -493,6 +497,53 @@ public class CameraController {
         if (VERBOSE) {
             Log.v(TAG, "Returned image " + timestamp);
         }
+    }
+
+    /**
+     * Returns the available zoom ratio range of the working camera.
+     *
+     * @return the zoom ratio range is retrieved from {@link CameraCharacteristics} with
+     * {@link CameraCharacteristics#CONTROL_ZOOM_RATIO_RANGE} which is supported since Android 11
+     * . The returned value might be null when failed to obtain it.
+     */
+    public Range<Float> getZoomRatioRange() {
+        try {
+            CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
+                    mCameraId);
+            return characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Failed to get zoom ratio range for camera " + mCameraId + ".", e);
+        }
+        return null;
+    }
+
+    /**
+     * Sets the new zoom ratio setting to the working camera.
+     */
+    public void setZoomRatio(float zoomRatio) {
+        mZoomRatio = zoomRatio;
+        mThreadPoolExecutor.execute(() -> {
+            synchronized (mSerializationLock) {
+                if (mCameraDevice == null || mCaptureSession == null) {
+                    return;
+                }
+
+                try {
+                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomRatio);
+                    mCaptureSession.setSingleRepeatingRequest(mPreviewRequestBuilder.build(),
+                            mThreadPoolExecutor, mCaptureCallback);
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Failed to set zoom ratio to the working camera.", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Returns current zoom ratio setting.
+     */
+    public float getZoomRatio() {
+        return mZoomRatio;
     }
 
     private static class ImageAndBuffer {
