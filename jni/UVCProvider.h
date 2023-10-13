@@ -106,7 +106,7 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
 
     void stopService();
 
-    int encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp);
+    int encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp, jint rotation);
 
     void watchStreamEvent();
 
@@ -134,7 +134,7 @@ class UVCProvider : public std::enable_shared_from_this<UVCProvider> {
         void processStreamOnEvent();
         void processStreamOffEvent();
         void processStreamEvent();
-        Status encodeImage(AHardwareBuffer* buffer, long timestamp);
+        Status encodeImage(AHardwareBuffer* buffer, long timestamp, int rotation);
 
         // BufferCreatorAndDestroyer overrides
         Status allocateAndMapBuffers(
