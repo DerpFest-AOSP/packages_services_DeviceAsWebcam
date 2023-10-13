@@ -60,7 +60,8 @@ Buffer* BufferManager::getFreeBufferIfAvailable() {
     }
     for (const auto& bufferItem : mProducerBufferItems) {
         uint64_t bufferTs = bufferItem.buffer->getTimestamp();
-        ALOGV("Buffer at state %d, ts %" PRIu64 ", v4l2 index %u", (int)bufferItem.state, bufferTs,
+        ALOGV("%s: Buffer at state %d, ts %" PRIu64 ", v4l2 index %u",
+              __FUNCTION__, (int)bufferItem.state, bufferTs,
               bufferItem.buffer->getIndex());
     }
     return nullptr;
@@ -69,12 +70,13 @@ Buffer* BufferManager::getFreeBufferIfAvailable() {
 bool BufferManager::filledProducerBufferAvailableLocked(uint32_t* index) {
     uint32_t i = 0;
     bool found = false;
+    uint32_t foundIndex = 0;
     uint64_t ts = 0;
     // Try to get the latest filled buffer.
     for (auto& bufferItem : mProducerBufferItems) {
         uint64_t bufferTs = bufferItem.buffer->getTimestamp();
-        ALOGV("Buffer at index i %u : state %d, ts %" PRIu64 ", v4l2 index %u", i,
-              (int)bufferItem.state, bufferTs, bufferItem.buffer->getIndex());
+        ALOGV("%s: Buffer at index i %u : state %d, ts %" PRIu64 ", v4l2 index %u", __FUNCTION__,
+                i, (int)bufferItem.state, bufferTs, bufferItem.buffer->getIndex());
         if (bufferItem.state == BufferState::FILLED) {
             if (bufferTs > ts) {
                 if (index != nullptr) {
@@ -82,13 +84,18 @@ bool BufferManager::filledProducerBufferAvailableLocked(uint32_t* index) {
                 }
                 ts = bufferTs;
                 found = true;
-            }
-            // Cancel older buffers
-            if (found && (bufferTs < ts)) {
-                bufferItem.state = BufferState::FREE;
+                foundIndex = i;
             }
         }
         i++;
+    }
+    // Actually cancel older buffers
+    uint32_t j = 0;
+    for (auto& bufferItem : mProducerBufferItems) {
+        if (bufferItem.state == BufferState::FILLED && j != foundIndex) {
+            bufferItem.state = BufferState::FREE;
+        }
+        j++;
     }
     return found;
 }
