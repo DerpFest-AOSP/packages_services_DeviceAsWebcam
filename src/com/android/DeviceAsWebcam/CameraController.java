@@ -35,21 +35,20 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.ArrayMap;
 import android.util.Log;
-import android.util.Pair;
 import android.util.Range;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
 
+import com.android.DeviceAsWebcam.utils.UserPrefs;
+
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.Map;
 
 /**
  * This class controls the operation of the camera - primarily through the public calls
@@ -190,15 +189,15 @@ public class CameraController {
                                             + mImageMap.size());
                         }
                         returnImage(ts);
-                        return;
                     }
                 }
             };
 
-    private volatile float mZoomRatio = 1.0f;
+    private volatile float mZoomRatio;
     private RotationProvider mRotationProvider;
     private RotationUpdateListener mRotationUpdateListener = null;
     private CameraInfo mCameraInfo = null;
+    private UserPrefs mUserPrefs;
 
     public CameraController(Context context, WeakReference<DeviceAsWebcamFgService> serviceWeak) {
         mContext = context;
@@ -210,10 +209,14 @@ public class CameraController {
         startBackgroundThread();
         mCameraManager = mContext.getSystemService(CameraManager.class);
         refreshLensFacingCameraIds();
-        mCameraId = mBackCameraId != null ? mBackCameraId : mFrontCameraId;
+
+        mUserPrefs = new UserPrefs(mContext);
+        mCameraId = mUserPrefs.fetchCameraId(/*defaultCameraId*/ mBackCameraId);
+        mZoomRatio = mUserPrefs.fetchZoomRatio(mCameraId, /*defaultZoom*/ 1.0f);
+
         mCameraInfo = mCameraInfoMap.get(mCameraId);
         mRotationProvider = new RotationProvider(context.getApplicationContext(),
-                mCameraInfo.getSensorOrientation());
+                mCameraInfo.getSensorOrientation(), mCameraInfo.getLensFacing());
         // Adds a listener to enable the RotationProvider so that we can get the rotation
         // degrees info to rotate the webcam stream images.
         mRotationProvider.addListener(mCameraCallbacksExecutor, rotation -> {
@@ -332,6 +335,7 @@ public class CameraController {
                 fpsRange = new Range<>(30, 30);
             }
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, mZoomRatio);
             mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
             mPreviewRequestBuilder.addTarget(mPreviewSurface);
             // So that we don't have to reconfigure if / when the preview activity is turned off /
@@ -339,7 +343,6 @@ public class CameraController {
 
             mOutputConfigurations = Arrays.asList(mPreviewOutputConfiguration);
             createCaptureSessionBlocking();
-            mZoomRatio = 1.0f;
             mCurrentState = PREVIEW_STREAMING;
         } catch (CameraAccessException e) {
             Log.e(TAG, "createCaptureRequest failed", e);
@@ -382,7 +385,6 @@ public class CameraController {
                         case PREVIEW_AND_WEBCAM_STREAMING:
                             Log.e(TAG, "Incorrect current state for startPreviewStreaming " +
                                     mCurrentState);
-                            return;
                     }
                 }
             }
@@ -399,8 +401,9 @@ public class CameraController {
             openCameraBlocking();
             mPreviewRequestBuilder =
                     mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            Range fpsRange = new Range(mFps, mFps);
+            Range<Integer> fpsRange = new Range<>(mFps, mFps);
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, mZoomRatio);
             mPreviewRequestBuilder.addTarget(surface);
             mWebcamOutputConfiguration = new OutputConfiguration(surface);
             mOutputConfigurations =
@@ -451,7 +454,6 @@ public class CameraController {
                     case WEBCAM_STREAMING:
                         Log.e(TAG, "Incorrect current state for startWebcamStreaming "
                                 + mCurrentState);
-                        return;
                 }
             }
         });
@@ -484,7 +486,6 @@ public class CameraController {
                             Log.e(TAG,
                                     "Incorrect current state for stopPreviewStreaming " +
                                             mCurrentState);
-                            return;
                     }
                 }
             }
@@ -515,7 +516,6 @@ public class CameraController {
         mWebcamOutputConfiguration = null;
         mPreviewOutputConfiguration = null;
         mCurrentState = NO_STREAMING;
-        mZoomRatio = 1.0f;
     }
 
     public void stopWebcamStreaming() {
@@ -620,6 +620,7 @@ public class CameraController {
                     mPreviewRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomRatio);
                     mCaptureSession.setSingleRepeatingRequest(mPreviewRequestBuilder.build(),
                             mCameraCallbacksExecutor, mCaptureCallback);
+                    mUserPrefs.storeZoomRatio(mCameraId, mZoomRatio);
                 } catch (CameraAccessException e) {
                     Log.e(TAG, "Failed to set zoom ratio to the working camera.", e);
                 }
@@ -660,10 +661,16 @@ public class CameraController {
                 mCameraId = mBackCameraId;
             }
             mCameraInfo = mCameraInfoMap.get(mCameraId);
+            mUserPrefs.storeCameraId(mCameraId);
+            mZoomRatio = mUserPrefs.fetchZoomRatio(mCameraId, /*defaultZoom*/ 1.0f);
         }
         mServiceEventsExecutor.execute(() -> {
             synchronized (mSerializationLock) {
                 mCaptureSession.close();
+                if (mCameraInfo != null) {
+                    mRotationProvider.updateSensorOrientation(mCameraInfo.getSensorOrientation(),
+                            mCameraInfo.getLensFacing());
+                }
                 switch (mCurrentState) {
                     case WEBCAM_STREAMING:
                         setupWebcamOnlyStreamAndOpenCameraLocked();
