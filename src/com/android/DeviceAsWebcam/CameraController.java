@@ -36,6 +36,7 @@ import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.hardware.display.DisplayManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
@@ -47,6 +48,7 @@ import android.util.Log;
 import android.util.Range;
 import android.util.Rational;
 import android.util.Size;
+import android.view.Display;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -131,6 +133,7 @@ public class CameraController {
      */
     private Consumer<Size> mPreviewSizeChangeListener;
     private Surface mPreviewSurface;
+    private Size mDisplaySize;
     private Size mPreviewSize;
     // Executor for ImageWriter thread - used when camera is evicted and webcam is streaming.
     private ScheduledExecutorService mImageWriterEventsExecutor;
@@ -342,6 +345,7 @@ public class CameraController {
         }
         startBackgroundThread();
         mCameraManager = mContext.getSystemService(CameraManager.class);
+        mDisplaySize = getDisplayPreviewSize();
         mCameraManager.registerAvailabilityCallback(
                 mCameraCallbacksExecutor, mCameraAvailabilityCallbacks);
         refreshLensFacingCameraIds();
@@ -444,27 +448,45 @@ public class CameraController {
         String workingCameraId =
                 (physicalInfos != null && !physicalInfos.isEmpty()) ? physicalInfos.get(
                         0).physicalCameraId : cameraId;
-        return cameraId == null ? null : new CameraInfo(
-                getCameraCharacteristic(cameraId, CameraCharacteristics.LENS_FACING),
-                getCameraCharacteristic(cameraId, CameraCharacteristics.SENSOR_ORIENTATION),
+        CameraCharacteristics chars = getCameraCharacteristicsOrNull(cameraId);
+        CameraCharacteristics physicalChars = getCameraCharacteristicsOrNull(workingCameraId);
+        // We should consider using a builder pattern here if the parameters grow a lot.
+        return new CameraInfo(
+                getCameraCharacteristic(chars, CameraCharacteristics.LENS_FACING),
+                getCameraCharacteristic(chars, CameraCharacteristics.SENSOR_ORIENTATION),
                 // TODO: b/269644311 Need to find a way to correct the available zoom ratio range
                 //  when a specific physical camera is used.
-                getCameraCharacteristic(workingCameraId,
+                getCameraCharacteristic(physicalChars,
                         CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE),
                 physicalInfos,
-                getCameraCharacteristic(cameraId,
-                        CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
+                getCameraCharacteristic(chars,
+                        CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE),
+                isFacePrioritySupported(chars),
+                isStreamUseCaseSupported(chars)
         );
     }
 
-    private <T> T getCameraCharacteristic(String cameraId, CameraCharacteristics.Key<T> key) {
+    private static <T> T getCameraCharacteristic(CameraCharacteristics chars,
+            CameraCharacteristics.Key<T> key) {
+        return chars.get(key);
+    }
+
+    private CameraCharacteristics getCameraCharacteristicsOrNull(String cameraId) {
         try {
             CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
                     cameraId);
-            return characteristics.get(key);
+            return characteristics;
         } catch (CameraAccessException e) {
-            Log.e(TAG, "Failed to get" + key.getName() + "characteristics for camera " + cameraId
-                    + ".");
+            Log.e(TAG, "Failed to get characteristics for camera " + cameraId
+                    + ".", e);
+        }
+      return null;
+    }
+
+    private <T> T getCameraCharacteristic(String cameraId, CameraCharacteristics.Key<T> key) {
+        CameraCharacteristics chars = getCameraCharacteristicsOrNull(cameraId);
+        if (chars != null) {
+            return chars.get(key);
         }
         return null;
     }
@@ -578,11 +600,17 @@ public class CameraController {
             return;
         }
         mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
+        if (mCameraInfo.isStreamUseCaseSupported() && shouldUseStreamUseCase()) {
+            mPreviewOutputConfiguration.setStreamUseCase(
+                    CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW);
+        }
+
         // So that we don't have to reconfigure if / when the preview activity is turned off /
         // on again.
+        mWebcamOutputConfiguration = null;
         mOutputConfigurations = Arrays.asList(mPreviewOutputConfiguration);
-        createCaptureSessionBlocking();
         mCurrentState = CameraStreamingState.PREVIEW_STREAMING;
+        createCaptureSessionBlocking();
     }
 
     private CaptureRequest.Builder createInitialPreviewRequestBuilder(Surface targetSurface) {
@@ -610,7 +638,7 @@ public class CameraController {
         captureRequestBuilder.addTarget(targetSurface);
         captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
-        if (isFacePrioritySupported()) {
+        if (mCameraInfo.isFacePrioritySupported()) {
             captureRequestBuilder.set(CaptureRequest.CONTROL_SCENE_MODE,
                     CaptureRequest.CONTROL_SCENE_MODE_FACE_PRIORITY);
         }
@@ -618,21 +646,66 @@ public class CameraController {
         return captureRequestBuilder;
     }
 
-    private boolean isFacePrioritySupported() {
-        int[] availableSceneModes = getCameraCharacteristic(mCameraId,
-                CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES);
-
-        if (availableSceneModes == null) {
+    private static boolean checkArrayContains(int[] array, int value) {
+        if (array == null) {
             return false;
         }
-
-        for (int availableSceneMode : availableSceneModes) {
-            if (availableSceneMode == CaptureRequest.CONTROL_SCENE_MODE_FACE_PRIORITY) {
+        for (int val : array) {
+            if (val == value) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static boolean isFacePrioritySupported(CameraCharacteristics chars) {
+        int[] availableSceneModes = getCameraCharacteristic(chars,
+                CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES);
+        return checkArrayContains(
+                availableSceneModes, CaptureRequest.CONTROL_SCENE_MODE_FACE_PRIORITY);
+    }
+
+    private static boolean isStreamUseCaseSupported(CameraCharacteristics chars) {
+        int[] caps = getCameraCharacteristic(chars,
+                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+        return checkArrayContains(
+                caps, CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE);
+    }
+
+    // CameraManager which populates the mandatory streams uses the same computation.
+    private Size getDisplayPreviewSize() {
+        Size ret = new Size(1920, 1080);
+        DisplayManager displayManager =
+                mContext.getSystemService(DisplayManager.class);
+        Display display = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+        if (display != null) {
+            Point sz = new Point();
+            display.getRealSize(sz);
+            int width = sz.x;
+            int height = sz.y;
+
+            if (height > width) {
+                height = width;
+                width = sz.y;
+            }
+            ret = new Size(width, height);
+        } else {
+            Log.e(TAG, "Invalid default display!");
+        }
+        return ret;
+    }
+
+    // Check whether we satisfy mandatory stream combinations for stream use use case
+    private boolean shouldUseStreamUseCase() {
+        // Webcam stream - YUV should be <= 1440p
+        // Preview stream should be <= PREVIEW - which is already guaranteed by
+        // getSuitablePreviewSize()
+        if (mWebcamOutputConfiguration != null && mStreamConfigs != null &&
+                (mStreamConfigs.width * mStreamConfigs.height) > (1920 * 1440)) {
+            return false;
+        }
+        return true;
     }
 
     private void setupPreviewStreamAlongsideWebcamStreamLocked(
@@ -646,11 +719,16 @@ public class CameraController {
         }
         mPreviewSurface = previewSurface;
         mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
+        if (mCameraInfo.isStreamUseCaseSupported() && shouldUseStreamUseCase()) {
+            mPreviewOutputConfiguration.setStreamUseCase(
+                    CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW);
+        }
+
         mPreviewRequestBuilder.addTarget(mPreviewSurface);
         mOutputConfigurations = Arrays.asList(mPreviewOutputConfiguration,
                 mWebcamOutputConfiguration);
-        createCaptureSessionBlocking();
         mCurrentState = CameraStreamingState.PREVIEW_AND_WEBCAM_STREAMING;
+        createCaptureSessionBlocking();
     }
 
     public void startPreviewStreaming(SurfaceTexture surfaceTexture, Size previewSize,
@@ -688,6 +766,7 @@ public class CameraController {
         }
         Surface surface = mImgReader.getSurface();
         openCameraBlocking();
+        mCurrentState = CameraStreamingState.WEBCAM_STREAMING;
         if (mCameraDevice != null) {
             mPreviewRequestBuilder = createInitialPreviewRequestBuilder(surface);
             if (mPreviewRequestBuilder == null) {
@@ -695,10 +774,13 @@ public class CameraController {
                 return;
             }
             mWebcamOutputConfiguration = new OutputConfiguration(surface);
+            if (mCameraInfo.isStreamUseCaseSupported() && shouldUseStreamUseCase()) {
+                mWebcamOutputConfiguration.setStreamUseCase(
+                        CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_CALL);
+            }
             mOutputConfigurations = Arrays.asList(mWebcamOutputConfiguration);
             createCaptureSessionBlocking();
         }
-        mCurrentState = CameraStreamingState.WEBCAM_STREAMING;
     }
 
     private void setupWebcamStreamAndReconfigureSessionLocked() {
@@ -709,10 +791,14 @@ public class CameraController {
         Surface surface = mImgReader.getSurface();
         mPreviewRequestBuilder.addTarget(surface);
         mWebcamOutputConfiguration = new OutputConfiguration(surface);
+        if (mCameraInfo.isStreamUseCaseSupported() && shouldUseStreamUseCase()) {
+            mWebcamOutputConfiguration.setStreamUseCase(
+                    CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_CALL);
+        }
+        mCurrentState = CameraStreamingState.PREVIEW_AND_WEBCAM_STREAMING;
         mOutputConfigurations =
                 Arrays.asList(mWebcamOutputConfiguration, mPreviewOutputConfiguration);
         createCaptureSessionBlocking();
-        mCurrentState = CameraStreamingState.PREVIEW_AND_WEBCAM_STREAMING;
     }
 
     /**
@@ -737,6 +823,11 @@ public class CameraController {
         mPreviewSize = suitablePreviewSize;
         mPreviewRequestBuilder.addTarget(mPreviewSurface);
         mPreviewOutputConfiguration = new OutputConfiguration(mPreviewSurface);
+        if (mCameraInfo.isStreamUseCaseSupported()) {
+                mPreviewOutputConfiguration.setStreamUseCase(
+                        CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW);
+        }
+
         mOutputConfigurations = mWebcamOutputConfiguration != null ? Arrays.asList(
                 mWebcamOutputConfiguration, mPreviewOutputConfiguration) : Arrays.asList(
                 mPreviewOutputConfiguration);
@@ -825,9 +916,9 @@ public class CameraController {
         mPreviewRequestBuilder.removeTarget(mImgReader.getSurface());
         mOutputConfigurations =
                 Arrays.asList(mPreviewOutputConfiguration);
-        createCaptureSessionBlocking();
-        mWebcamOutputConfiguration = null;
         mCurrentState = CameraStreamingState.PREVIEW_STREAMING;
+        mWebcamOutputConfiguration = null;
+        createCaptureSessionBlocking();
     }
 
     private void stopStreamingAltogetherLocked() {
@@ -1046,17 +1137,22 @@ public class CameraController {
      *
      * <p>If the webcam stream doesn't exist, find the largest 16:9 supported output size which is
      * not larger than 1080p. If the webcam stream exists, find the largest supported output size
-     * which matches the aspect ratio of the webcam stream size and is not larger than the webcam
-     * stream size.
+     * which matches the aspect ratio of the webcam stream size and is not larger than the
+     * display size or 1080p, whichever is smaller.
      */
     public Size getSuitablePreviewSize() {
         if (mCameraId == null) {
             Log.e(TAG, "No camera is found on the device.");
             return null;
         }
-
-        Size maxPreviewSize = mImgReader != null ? new Size(mImgReader.getWidth(),
-                mImgReader.getHeight()) : new Size(1920, 1080);
+        Size s1080p = new Size(1920, 1080);
+        // PREVIEW is max(1080p, display size) - this is the max size of preview streams that is
+        // guaranteed to be supported, when another YUV stream (here the webcam stream) is also
+        // configured.
+        Size maxPreviewSize =
+                (1920 * 1080)  >
+                        (mDisplaySize.getWidth() * mDisplaySize.getHeight()) ?
+                                mDisplaySize : s1080p;
 
         // If webcam stream exists, find an output size matching its aspect ratio. Otherwise, find
         // an output size with 16:9 aspect ratio.
