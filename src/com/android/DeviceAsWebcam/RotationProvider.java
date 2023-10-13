@@ -20,6 +20,7 @@ import android.annotation.IntRange;
 import android.content.Context;
 import android.hardware.SensorManager;
 import android.hardware.display.DisplayManager;
+import android.util.Log;
 import android.view.Display;
 import android.view.OrientationEventListener;
 import android.view.Surface;
@@ -53,7 +54,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * </code></pre>
  */
 public final class RotationProvider {
-
     private final Object mLock = new Object();
     private final OrientationEventListener mOrientationListener;
     private final Map<Listener, ListenerWrapper> mListeners = new HashMap<>();
@@ -64,8 +64,8 @@ public final class RotationProvider {
      * Creates a new RotationProvider.
      *
      * @param applicationContext the application context used to register
-     * {@link OrientationEventListener} or get display rotation.
-     * @param sensorOrientation the camera sensor orientation value
+     *                           {@link OrientationEventListener} or get display rotation.
+     * @param sensorOrientation  the camera sensor orientation value
      */
     public RotationProvider(Context applicationContext, int sensorOrientation) {
         int displayRotation = applicationContext.getSystemService(DisplayManager.class).getDisplay(
@@ -81,11 +81,12 @@ public final class RotationProvider {
                     return;
                 }
 
-                int newRotation = sensorOrientationToRotationDegrees(orientation);
+                int newRotation;
                 int originalRotation;
                 List<ListenerWrapper> listeners = new ArrayList<>();
                 // Take a snapshot for thread safety.
                 synchronized (mLock) {
+                    newRotation = sensorOrientationToRotationDegrees(orientation);
                     originalRotation = mRotation;
                     if (mRotation != newRotation) {
                         mRotation = newRotation;
@@ -94,10 +95,8 @@ public final class RotationProvider {
                 }
 
                 if (originalRotation != newRotation) {
-                    if (!listeners.isEmpty()) {
-                        for (ListenerWrapper listenerWrapper : listeners) {
-                            listenerWrapper.onRotationChanged(newRotation);
-                        }
+                    for (ListenerWrapper listenerWrapper : listeners) {
+                        listenerWrapper.onRotationChanged(newRotation);
                     }
                 }
             }
@@ -148,18 +147,41 @@ public final class RotationProvider {
     }
 
     /**
-     * Converts sensor orientation degrees to the image rotation degrees.
+     * Converts sensor orientation degrees to the image rotation degrees. Also debounces edge cases
+     * to prevent stream from flipping very quickly while the user is handling the device.
      *
      * <p>Currently, the returned value can only be 0 or 180 because DeviceAsWebcam only support
      * in the landscape mode. The webcam stream images will be rotated to upright orientation when
      * the device is in the landscape orientation.
      */
     private int sensorOrientationToRotationDegrees(@IntRange(from = 0, to = 359) int orientation) {
-        if ((mSensorOrientation % 180 == 90 && orientation >= 45 && orientation < 135) || (
-                mSensorOrientation % 180 == 0 && orientation >= 135 && orientation < 225)) {
-            return 180;
-        } else {
-            return 0;
+        synchronized (mLock) {
+            // Orientation is reported as the clockwise angle from device's natural orientation.
+            // Camera sensor orientation is reported as the clockwise angle that the buffer must be
+            // rotated to match device's natural orientation, so the sensor orientation is reported
+            // counter clockwise.
+            int bufferAngle = 360 - mSensorOrientation;
+
+            // If the angle between the image buffer and device is greater than 90 degrees on either
+            // side, we want to flip the stream.
+            int dAngle = (360 + (bufferAngle - orientation)) % 360;
+
+            // To prevent stream from wildly flipping around while the user is handling the device,
+            // we debounce values that are too close to the trigger points. "Too close" is being
+            // arbitrarily defined as within 10 degrees.
+            int ident = dAngle / 10;
+            if (ident == 8 || ident == 9
+                    || ident == 26 || ident == 27) {
+                // orientation too close to 90 or 270; don't change rotation
+                return mRotation;
+            }
+
+            // Orientation past the debounce zone. Return ideal rotation
+            if (dAngle >= 90 && dAngle < 270) {
+                return 180;
+            } else {
+                return 0;
+            }
         }
     }
 
