@@ -74,7 +74,6 @@ public class ZoomController extends FrameLayout {
     private View mToggleButtonSelected;
     private SeekBar mSeekBar;
     private ZoomKnob mZoomKnob;
-    private View mToggleOptionLowSideSpace;
     /**
      * TextView of the low sticky zoom ratio value option item.
      */
@@ -166,7 +165,6 @@ public class ZoomController extends FrameLayout {
         mToggleOptionLow = findViewById(R.id.zoom_ui_toggle_option_low);
         mToggleOptionMiddle = findViewById(R.id.zoom_ui_toggle_option_middle);
         mToggleOptionHigh = findViewById(R.id.zoom_ui_toggle_option_high);
-        mToggleOptionLowSideSpace = findViewById(R.id.zoom_ui_toggle_option_low_side_space);
 
         switchZoomUiMode(mZoomUiMode);
 
@@ -426,14 +424,12 @@ public class ZoomController extends FrameLayout {
             case 2 -> {
                 layoutWidth = getResources().getDimensionPixelSize(
                         R.dimen.zoom_ui_toggle_two_options_layout_width);
-                mToggleOptionLowSideSpace.setVisibility(View.GONE);
                 mToggleOptionMiddle.setVisibility(View.GONE);
                 setSelectedZoomToggleOption(0);
             }
             case 3 -> {
                 layoutWidth = getResources().getDimensionPixelSize(
                         R.dimen.zoom_ui_toggle_three_options_layout_width);
-                mToggleOptionLowSideSpace.setVisibility(View.VISIBLE);
                 mToggleOptionMiddle.setVisibility(View.VISIBLE);
                 setSelectedZoomToggleOption(1);
             }
@@ -487,18 +483,18 @@ public class ZoomController extends FrameLayout {
                 lp.leftMargin = getResources().getDimensionPixelSize(
                         R.dimen.zoom_ui_toggle_padding);
                 lp.rightMargin = 0;
-                lp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.LEFT;
+                lp.gravity = Gravity.CENTER_VERTICAL | Gravity.LEFT;
             }
             case 1 -> {
                 lp.leftMargin = 0;
                 lp.rightMargin = 0;
-                lp.gravity = Gravity.CENTER_HORIZONTAL;
+                lp.gravity = Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL;
             }
             case 2 -> {
                 lp.leftMargin = 0;
                 lp.rightMargin = getResources().getDimensionPixelSize(
                         R.dimen.zoom_ui_toggle_padding);
-                lp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.RIGHT;
+                lp.gravity = Gravity.CENTER_VERTICAL | Gravity.RIGHT;
             }
             default -> throw new IllegalArgumentException("Unsupported toggle option index!");
         }
