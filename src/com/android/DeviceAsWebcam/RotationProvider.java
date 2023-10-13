@@ -196,10 +196,6 @@ public final class RotationProvider {
 
     /**
      * Callback interface to receive rotation updates.
-     *
-     * <p>Currently, CameraController only sets an empty listener to enable the RotationProvider's
-     * orientation listener. In the coming CLs, a real implementation will be set to notify the
-     * preview activity to rotate the UI controls to correct orientation.
      */
     public interface Listener {
 

@@ -43,10 +43,8 @@ import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -194,6 +192,7 @@ public class CameraController {
 
     private volatile float mZoomRatio = 1.0f;
     private RotationProvider mRotationProvider;
+    private RotationUpdateListener mRotationUpdateListener = null;
     private CameraInfo mCameraInfo = null;
 
     public CameraController(Context context, WeakReference<DeviceAsWebcamFgService> serviceWeak) {
@@ -210,9 +209,13 @@ public class CameraController {
         mCameraInfo = createCameraInfo(mCameraId);
         mRotationProvider = new RotationProvider(context.getApplicationContext(),
                 mCameraInfo.getSensorOrientation());
-        // Adds an empty listener to enable the RotationProvider so that we can get the rotation
+        // Adds a listener to enable the RotationProvider so that we can get the rotation
         // degrees info to rotate the webcam stream images.
-        mRotationProvider.addListener(mCameraCallbacksExecutor, rotation -> {});
+        mRotationProvider.addListener(mCameraCallbacksExecutor, rotation -> {
+            if (mRotationUpdateListener != null) {
+                mRotationUpdateListener.onRotationUpdated(rotation);
+            }
+        });
     }
 
     private void refreshLensFacingCameraIds() {
@@ -647,6 +650,13 @@ public class CameraController {
     }
 
     /**
+     * Sets a {@link RotationUpdateListener} to monitor the rotation changes.
+     */
+    public void setRotationUpdateListener(RotationUpdateListener listener) {
+        mRotationUpdateListener = listener;
+    }
+
+    /**
      * Returns current rotation degrees value.
      */
     public int getCurrentRotation() {
@@ -660,5 +670,18 @@ public class CameraController {
             image = i;
             buffer = b;
         }
+    }
+
+    /**
+     * An interface to monitor the rotation changes.
+     */
+    interface RotationUpdateListener {
+        /**
+         * Called when the physical rotation of the device changes to cause the corresponding
+         * rotation degrees value is changed.
+         *
+         * @param rotation the updated rotation degrees value.
+         */
+        void onRotationUpdated(int rotation);
     }
 }
