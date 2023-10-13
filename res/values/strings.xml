@@ -23,5 +23,5 @@
     <string name="zoom_ratio_description">Zoom ratio value</string>
     <string name="zoom_ratio">%.2fx</string>
     <!-- Accessibility description for the toggle camera image button -->
-    <string name="toggle_camera_button_description">Toggle camera button</string>
+    <string name="toggle_camera_button_description">Toggle camera direction button</string>
 </resources>

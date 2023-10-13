@@ -737,12 +737,12 @@ void UVCProvider::UVCDevice::processStreamEvent() {
         return;
     }
 }
-Status UVCProvider::UVCDevice::encodeImage(AHardwareBuffer* buffer, long timestamp) {
+Status UVCProvider::UVCDevice::encodeImage(AHardwareBuffer* buffer, long timestamp, int rotation) {
     if (mFrameProvider == nullptr) {
         ALOGE("%s: encodeImage called but there is no frame provider active", __FUNCTION__);
         return Status::ERROR;
     }
-    return mFrameProvider->encodeImage(buffer, timestamp);
+    return mFrameProvider->encodeImage(buffer, timestamp, rotation);
 }
 
 void UVCProvider::processUVCEvent() {
@@ -821,12 +821,12 @@ void UVCProvider::ListenToUVCFds() {
     }
 }
 
-int UVCProvider::encodeImage(AHardwareBuffer* buffer, long timestamp) {
+int UVCProvider::encodeImage(AHardwareBuffer* buffer, long timestamp, int rotation) {
     if (mUVCDevice == nullptr) {
         ALOGE("%s: Request to encode Image without UVCDevice Running.", __FUNCTION__);
         return -1;
     }
-    return mUVCDevice->encodeImage(buffer, timestamp) == Status::OK ? 0 : -1;
+    return mUVCDevice->encodeImage(buffer, timestamp, rotation) == Status::OK ? 0 : -1;
 }
 
 void UVCProvider::startUVCListenerThread() {

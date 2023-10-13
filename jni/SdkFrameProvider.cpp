@@ -55,13 +55,14 @@ Status SdkFrameProvider::stopStreaming() {
     return Status::OK;
 }
 
-Status SdkFrameProvider::encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp) {
+Status SdkFrameProvider::encodeImage(AHardwareBuffer* hardwareBuffer, long timestamp,
+                                     int rotation) {
     HardwareBufferDesc desc;
     if (getHardwareBufferDescFromHardwareBuffer(hardwareBuffer, desc) != Status::OK) {
         ALOGE("%s Couldn't get hardware buffer descriptor", __FUNCTION__);
         return Status::ERROR;
     }
-    return encodeImage(desc, timestamp);
+    return encodeImage(desc, timestamp, rotation);
 }
 
 Status SdkFrameProvider::getHardwareBufferDescFromHardwareBuffer(AHardwareBuffer* hardwareBuffer,
@@ -112,7 +113,7 @@ Status SdkFrameProvider::getHardwareBufferDescFromHardwareBuffer(AHardwareBuffer
     return Status::OK;
 }
 
-Status SdkFrameProvider::encodeImage(HardwareBufferDesc desc, jlong timestamp) {
+Status SdkFrameProvider::encodeImage(HardwareBufferDesc desc, jlong timestamp, jint rotation) {
     Buffer* producerBuffer = mBufferProducer->getFreeBufferIfAvailable();
     if (producerBuffer == nullptr) {
         // Not available so don't compress
@@ -123,7 +124,7 @@ Status SdkFrameProvider::encodeImage(HardwareBufferDesc desc, jlong timestamp) {
 
     producerBuffer->setTimestamp(static_cast<uint64_t>(timestamp));
     // send to the Encoder.
-    EncodeRequest encodeRequest(desc, producerBuffer);
+    EncodeRequest encodeRequest(desc, producerBuffer, rotation);
     mEncoder->queueRequest(encodeRequest);
     return Status::OK;
 }

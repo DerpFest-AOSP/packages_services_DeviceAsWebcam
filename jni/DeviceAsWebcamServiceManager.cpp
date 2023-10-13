@@ -54,7 +54,7 @@ int DeviceAsWebcamServiceManager::setupServicesAndStartListening(JNIEnv* env, jo
 }
 
 int DeviceAsWebcamServiceManager::encodeImage(JNIEnv* env, jobject hardwareBuffer,
-                                              jlong timestamp) {
+                                              jlong timestamp, jint rotation) {
     ALOGV("%s", __FUNCTION__);
     std::lock_guard<std::mutex> l(mSerializationLock);
     if (!mServiceRunning) {
@@ -62,7 +62,7 @@ int DeviceAsWebcamServiceManager::encodeImage(JNIEnv* env, jobject hardwareBuffe
         return -1;
     }
     AHardwareBuffer* buffer = AHardwareBuffer_fromHardwareBuffer(env, hardwareBuffer);
-    return mUVCProvider->encodeImage(buffer, timestamp);
+    return mUVCProvider->encodeImage(buffer, timestamp, rotation);
 }
 
 void DeviceAsWebcamServiceManager::setStreamConfig(bool mjpeg, uint32_t width, uint32_t height,
