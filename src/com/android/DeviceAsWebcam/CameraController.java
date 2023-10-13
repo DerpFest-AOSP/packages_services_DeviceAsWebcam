@@ -17,10 +17,10 @@
 package com.android.DeviceAsWebcam;
 
 import android.content.Context;
-import android.graphics.BitmapFactory;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
@@ -104,6 +104,9 @@ public class CameraController {
     };
 
     private static final int MAX_BUFFERS = 4;
+    // The ratio to the active array size that will be used to determine the metering rectangle
+    // size.
+    private static final float METERING_RECTANGLE_SIZE_RATIO = 0.15f;
 
     private String mBackCameraId = null;
     private String mFrontCameraId = null;
@@ -156,6 +159,7 @@ public class CameraController {
     // TODO(b/267794640): UI to select camera id
     private String mCameraId = null;
     private ArrayMap<String, CameraInfo> mCameraInfoMap = new ArrayMap<>();
+    private float[] mTapToFocusPoints = null;
     private static class StreamConfigs {
         StreamConfigs(boolean mjpegP, int widthP, int heightP, int fpsP) {
             isMjpeg = mjpegP;
@@ -940,6 +944,7 @@ public class CameraController {
         mCameraDevice = null;
         mWebcamOutputConfiguration = null;
         mPreviewOutputConfiguration = null;
+        mTapToFocusPoints = null;
     }
 
     public void stopWebcamStreaming() {
@@ -1090,6 +1095,7 @@ public class CameraController {
             mCameraInfo = mCameraInfoMap.get(mCameraId);
             mUserPrefs.storeCameraId(mCameraId);
             mZoomRatio = mUserPrefs.fetchZoomRatio(mCameraId, /*defaultZoom*/ 1.0f);
+            mTapToFocusPoints = null;
         }
         mServiceEventsExecutor.execute(() -> {
             synchronized (mSerializationLock) {
@@ -1187,11 +1193,12 @@ public class CameraController {
     }
 
     /**
-     * Trigger tap-to-focus operation for the specified metering rectangles.
+     * Trigger tap-to-focus operation for the specified normalized points mapping to the FOV.
      *
-     * <p>The specified metering rectangles will be applied for AF, AE and AWB.
+     * <p>The specified normalized points will be used to calculate the corresponding metering
+     * rectangles that will be applied for AF, AE and AWB.
      */
-    public void tapToFocus(MeteringRectangle[] meteringRectangles) {
+    public void tapToFocus(float[] normalizedPoint) {
         mServiceEventsExecutor.execute(() -> {
             synchronized (mSerializationLock) {
                 if (mCameraDevice == null || mCaptureSession == null) {
@@ -1199,6 +1206,9 @@ public class CameraController {
                 }
 
                 try {
+                    mTapToFocusPoints = normalizedPoint;
+                    MeteringRectangle[] meteringRectangles =
+                            new MeteringRectangle[]{calculateMeteringRectangle(normalizedPoint)};
                     // Updates the metering rectangles to the repeating request
                     updateTapToFocusParameters(mPreviewRequestBuilder, meteringRectangles,
                             /* afTriggerStart */ false);
@@ -1234,6 +1244,85 @@ public class CameraController {
                 }
             }
         });
+    }
+
+    /**
+     * Resets to the auto-focus mode.
+     */
+    public void resetToAutoFocus() {
+        mServiceEventsExecutor.execute(() -> {
+            synchronized (mSerializationLock) {
+                if (mCameraDevice == null || mCaptureSession == null) {
+                    return;
+                }
+                mTapToFocusPoints = null;
+
+                // Resets to CONTINUOUS_VIDEO mode
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+                // Clears the Af/Ae/Awb regions
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, null);
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, null);
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_REGIONS, null);
+
+                try {
+                    mCaptureSession.setSingleRepeatingRequest(mPreviewRequestBuilder.build(),
+                            mCameraCallbacksExecutor, mCaptureCallback);
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Failed to reset to auto-focus mode to the working camera.", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Retrieves current tap-to-focus points.
+     *
+     * @return the normalized points or {@code null} if it is auto-focus mode currently.
+     */
+    public float[] getTapToFocusPoints() {
+        synchronized (mSerializationLock) {
+            return mTapToFocusPoints == null ? null
+                    : new float[]{mTapToFocusPoints[0], mTapToFocusPoints[1]};
+        }
+    }
+
+    /**
+     * Calculates the metering rectangle according to the normalized point.
+     */
+    private MeteringRectangle calculateMeteringRectangle(float[] normalizedPoint) {
+        CameraInfo cameraInfo = getCameraInfo();
+        Rect activeArraySize = cameraInfo.getActiveArraySize();
+        float halfMeteringRectWidth = (METERING_RECTANGLE_SIZE_RATIO * activeArraySize.width()) / 2;
+        float halfMeteringRectHeight =
+                (METERING_RECTANGLE_SIZE_RATIO * activeArraySize.height()) / 2;
+
+        Matrix matrix = new Matrix();
+        matrix.postRotate(-cameraInfo.getSensorOrientation(), 0.5f, 0.5f);
+        // Flips if current working camera is front camera
+        if (cameraInfo.getLensFacing() == CameraCharacteristics.LENS_FACING_FRONT) {
+            matrix.postScale(1, -1, 0.5f, 0.5f);
+        }
+        matrix.postScale(activeArraySize.width(), activeArraySize.height());
+        float[] mappingPoints = new float[]{normalizedPoint[0], normalizedPoint[1]};
+        matrix.mapPoints(mappingPoints);
+
+        Rect meteringRegion = new Rect(
+                clamp((int) (mappingPoints[0] - halfMeteringRectWidth), 0,
+                        activeArraySize.width()),
+                clamp((int) (mappingPoints[1] - halfMeteringRectHeight), 0,
+                        activeArraySize.height()),
+                clamp((int) (mappingPoints[0] + halfMeteringRectWidth), 0,
+                        activeArraySize.width()),
+                clamp((int) (mappingPoints[1] + halfMeteringRectHeight), 0,
+                        activeArraySize.height())
+        );
+
+        return new MeteringRectangle(meteringRegion, MeteringRectangle.METERING_WEIGHT_MAX);
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.min(Math.max(value, min), max);
     }
 
     /**
