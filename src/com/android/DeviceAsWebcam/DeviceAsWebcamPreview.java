@@ -42,9 +42,10 @@ import android.view.WindowInsetsController;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.TextView;
 
 import androidx.cardview.widget.CardView;
+
+import com.android.DeviceAsWebcam.view.ZoomController;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -52,6 +53,7 @@ import java.util.concurrent.Executors;
 public class DeviceAsWebcamPreview extends Activity {
     private static final String TAG = DeviceAsWebcamPreview.class.getSimpleName();
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
+    private static final int ROTATION_ANIMATION_DURATION_MS = 300;
 
     private static final int MAX_PREVIEW_WIDTH = 1920;
     private static final int MAX_PREVIEW_HEIGHT = 1080;
@@ -67,7 +69,7 @@ public class DeviceAsWebcamPreview extends Activity {
     private FrameLayout mTextureViewContainer;
     private CardView mTextureViewCard;
     private TextureView mTextureView;
-    private TextView mZoomRatioTextView;
+    private ZoomController mZoomController = null;
     private ImageButton mToggleCameraButton;
 
     /**
@@ -159,7 +161,8 @@ public class DeviceAsWebcamPreview extends Activity {
                     }
 
                     mLocalFgService.setZoomRatio(updatedZoomRatio);
-                    updateZoomText(updatedZoomRatio);
+                    mZoomController.setZoomRatio(updatedZoomRatio,
+                            ZoomController.ZOOM_UI_SEEK_BAR_MODE);
                 }
             };
 
@@ -204,7 +207,6 @@ public class DeviceAsWebcamPreview extends Activity {
         // Retrieves current zoom ratio setting from CameraController so that the zoom ratio set by
         // the previous closed activity can be correctly restored
         float currentZoomRatio = mLocalFgService.getZoomRatio();
-        updateZoomText(currentZoomRatio);
 
         mMotionEventToZoomRatioConverter = new MotionEventToZoomRatioConverter(
                 getApplicationContext(), zoomRatioRange, currentZoomRatio,
@@ -215,15 +217,49 @@ public class DeviceAsWebcamPreview extends Activity {
                     mMotionEventToZoomRatioConverter.onTouchEvent(event);
                     return true;
                 });
+
+        mZoomController.init(getLayoutInflater(), zoomRatioRange);
+        mZoomController.setZoomRatio(currentZoomRatio, ZoomController.ZOOM_UI_TOGGLE_MODE);
+        mZoomController.setOnZoomRatioUpdatedListener(
+                value -> {
+                    if (mLocalFgService != null) {
+                        mLocalFgService.setZoomRatio(value);
+                    }
+                    mMotionEventToZoomRatioConverter.setZoomRatio(value);
+                });
+    }
+
+    private void setupZoomRatioSeekBar() {
+        if (mLocalFgService == null) {
+            return;
+        }
+
+        mZoomController.setSupportedZoomRatioRange(
+                mLocalFgService.getCameraInfo().getZoomRatioRange());
     }
 
     private void rotateUiByRotationDegrees(int rotation) {
-        // Rotates the UI control container according to the device sensor rotation degrees and the
-        // camera sensor orientation.
         if (mLocalFgService == null) {
             // Don't do anything if no foreground service is connected
             return;
         }
+        int finalRotation = calculateUiRotation(rotation);
+        runOnUiThread(() -> {
+            ObjectAnimator anim = ObjectAnimator.ofFloat(mToggleCameraButton,
+                            /*propertyName=*/"rotation", finalRotation)
+                    .setDuration(ROTATION_ANIMATION_DURATION_MS);
+            anim.setInterpolator(new AccelerateDecelerateInterpolator());
+            anim.start();
+            mToggleCameraButton.performHapticFeedback(
+                    HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE);
+
+            mZoomController.setTextDisplayRotation(finalRotation, ROTATION_ANIMATION_DURATION_MS);
+        });
+    }
+
+    private int calculateUiRotation(int rotation) {
+        // Rotates the UI control container according to the device sensor rotation degrees and the
+        // camera sensor orientation.
         int sensorOrientation = mLocalFgService.getCameraInfo().getSensorOrientation();
         if (mLocalFgService.getCameraInfo().getLensFacing()
                 == CameraCharacteristics.LENS_FACING_BACK) {
@@ -234,16 +270,7 @@ public class DeviceAsWebcamPreview extends Activity {
 
         // Rotation angle of the view must be [-179, 180] to ensure we always rotate the
         // view through the natural orientation (0)
-        int finalRotation = rotation <= 180 ? rotation : rotation - 360;
-        runOnUiThread(() -> {
-            ObjectAnimator anim = ObjectAnimator.ofFloat(mToggleCameraButton,
-                            /*propertyName=*/"rotation", finalRotation)
-                    .setDuration(300);
-            anim.setInterpolator(new AccelerateDecelerateInterpolator());
-            anim.start();
-            mToggleCameraButton.performHapticFeedback(
-                    HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE);
-        });
+        return rotation <= 180 ? rotation : rotation - 360;
     }
 
     private void setupTextureViewLayout() {
@@ -276,8 +303,8 @@ public class DeviceAsWebcamPreview extends Activity {
         mTextureViewContainer = findViewById(R.id.texture_view_container);
         mTextureViewCard = findViewById(R.id.texture_view_card);
         mTextureView = findViewById(R.id.texture_view);
-        mZoomRatioTextView = findViewById(R.id.zoom_ratio_text_view);
         mToggleCameraButton = findViewById(R.id.toggle_camera_button);
+        mZoomController = findViewById(R.id.zoom_ui_controller);
 
         // Update view to allow for status bar. This let's us keep a consistent background color
         // behind the statusbar.
@@ -331,7 +358,8 @@ public class DeviceAsWebcamPreview extends Activity {
                 rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
                 mLocalFgService.setRotationUpdateListener(rotation ->
                         runOnUiThread(() -> rotateUiByRotationDegrees(rotation)));
-                updateZoomText(mLocalFgService.getZoomRatio());
+                mZoomController.setZoomRatio(mLocalFgService.getZoomRatio(),
+                        ZoomController.ZOOM_UI_TOGGLE_MODE);
             }
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
@@ -364,10 +392,8 @@ public class DeviceAsWebcamPreview extends Activity {
         mLocalFgService.toggleCamera();
         mMotionEventToZoomRatioConverter.reset(mLocalFgService.getZoomRatio(),
                 mLocalFgService.getCameraInfo().getZoomRatioRange());
-        updateZoomText(mLocalFgService.getZoomRatio());
-    }
-
-    private void updateZoomText(float zoomRatio) {
-        mZoomRatioTextView.setText(getString(R.string.zoom_ratio, zoomRatio));
+        setupZoomRatioSeekBar();
+        mZoomController.setZoomRatio(mLocalFgService.getZoomRatio(),
+                ZoomController.ZOOM_UI_TOGGLE_MODE);
     }
 }

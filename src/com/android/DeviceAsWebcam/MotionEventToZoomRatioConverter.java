@@ -73,6 +73,13 @@ public class MotionEventToZoomRatioConverter {
     }
 
     /**
+     * Sets the zoom ratio value.
+     */
+    public void setZoomRatio(float zoomRatio) {
+        mCurrentZoomRatio = zoomRatio;
+    }
+
+    /**
      * Resets the converter with the new zoom ratio range setting.
      */
     public void reset(float currZoomRatio, Range<Float> zoomRatioRange) {
