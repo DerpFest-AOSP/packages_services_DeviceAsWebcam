@@ -33,7 +33,9 @@ import android.media.ImageReader;
 import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.ArrayMap;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Range;
 import android.view.Surface;
 
@@ -41,11 +43,13 @@ import androidx.annotation.NonNull;
 
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
 
 /**
  * This class controls the operation of the camera - primarily through the public calls
@@ -98,6 +102,7 @@ public class CameraController {
     private int mFps;
     // TODO(b/267794640): UI to select camera id
     private String mCameraId = null;
+    private ArrayMap<String, CameraInfo> mCameraInfoMap = new ArrayMap<>();
 
     private CameraDevice.StateCallback mCameraStateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -206,7 +211,7 @@ public class CameraController {
         mCameraManager = mContext.getSystemService(CameraManager.class);
         refreshLensFacingCameraIds();
         mCameraId = mBackCameraId != null ? mBackCameraId : mFrontCameraId;
-        mCameraInfo = createCameraInfo(mCameraId);
+        mCameraInfo = mCameraInfoMap.get(mCameraId);
         mRotationProvider = new RotationProvider(context.getApplicationContext(),
                 mCameraInfo.getSensorOrientation());
         // Adds a listener to enable the RotationProvider so that we can get the rotation
@@ -219,6 +224,8 @@ public class CameraController {
     }
 
     private void refreshLensFacingCameraIds() {
+        VendorCameraPrefs rroCameraInfo =
+                VendorCameraPrefs.getVendorCameraPrefsFromJson(mContext);
         try {
             String[] cameraIdList = mCameraManager.getCameraIdList();
             if (cameraIdList == null) {
@@ -233,17 +240,21 @@ public class CameraController {
                         && lensFacing == CameraMetadata.LENS_FACING_FRONT) {
                     mFrontCameraId = cameraId;
                 }
+                mCameraInfoMap.put(cameraId,
+                        createCameraInfo(cameraId, rroCameraInfo.getPhysicalCameraInfos(cameraId)));
             }
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to retrieve camera id list.", e);
         }
     }
 
-    private CameraInfo createCameraInfo(String cameraId) {
+    private CameraInfo createCameraInfo(String cameraId,
+            List<VendorCameraPrefs.PhysicalCameraInfo> physicalInfos) {
         return cameraId == null ? null : new CameraInfo(
                 getCameraCharacteristic(cameraId, CameraCharacteristics.LENS_FACING),
                 getCameraCharacteristic(cameraId, CameraCharacteristics.SENSOR_ORIENTATION),
-                getCameraCharacteristic(cameraId, CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE)
+                getCameraCharacteristic(cameraId, CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE),
+                physicalInfos
         );
     }
 
@@ -548,6 +559,19 @@ public class CameraController {
     }
 
     private void createCaptureSessionBlocking() {
+        CameraInfo cameraInfo = mCameraInfoMap.get(mCameraId);
+        List<VendorCameraPrefs.PhysicalCameraInfo> physicalInfos =
+                cameraInfo.getPhysicalCameraInfos();
+        if (physicalInfos != null && physicalInfos.size() != 0) {
+            // For now we just consider the first physical camera id.
+            String physicalCameraId = physicalInfos.get(0).physicalCameraId;
+            // TODO: b/269644311 charcoalchen@google.com : Allow UX to display labels
+            // and choose amongst physical camera ids if offered by vendor.
+            for (OutputConfiguration config : mOutputConfigurations) {
+                config.setPhysicalCameraId(physicalCameraId);
+            }
+        }
+
         try {
             mCameraDevice.createCaptureSession(
                     new SessionConfiguration(
@@ -632,7 +656,7 @@ public class CameraController {
                 } else {
                     mCameraId = mBackCameraId;
                 }
-                mCameraInfo = createCameraInfo(mCameraId);
+                mCameraInfo = mCameraInfoMap.get(mCameraId);
                 switch (mCurrentState) {
                     case WEBCAM_STREAMING:
                         setupWebcamOnlyStreamAndOpenCameraLocked();
