@@ -48,11 +48,10 @@
 
             <ImageView
                 android:id="@+id/focus_indicator"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="@dimen/focus_indicator_size"
+                android:layout_height="@dimen/focus_indicator_size"
                 android:contentDescription="@null"
-                android:visibility="gone"
-                android:background="@drawable/ic_filter_center_focus" />
+                android:visibility="gone" />
         </androidx.cardview.widget.CardView>
     </FrameLayout>
 
