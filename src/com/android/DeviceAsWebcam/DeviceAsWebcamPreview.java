@@ -45,6 +45,7 @@ import android.util.Size;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
@@ -545,6 +546,34 @@ public class DeviceAsWebcamPreview extends Activity {
             mLocalFgService.setRotationUpdateListener(null);
         }
         super.onPause();
+    }
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (mLocalFgService == null || (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN
+                && keyCode != KeyEvent.KEYCODE_VOLUME_UP)) {
+            return super.onKeyDown(keyCode, event);
+        }
+
+        float zoomRatio = mLocalFgService.getZoomRatio();
+
+        // Uses volume key events to adjust zoom ratio
+        if ((keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)){
+            zoomRatio -= 0.1f;
+        } else {
+            zoomRatio += 0.1f;
+        }
+
+        // Clamps the zoom ratio in the supported range
+        Range<Float> zoomRatioRange = mLocalFgService.getCameraInfo().getZoomRatioRange();
+        zoomRatio = Math.min(Math.max(zoomRatio, zoomRatioRange.getLower()),
+                zoomRatioRange.getUpper());
+
+        // Updates the new value to all related controls
+        mLocalFgService.setZoomRatio(zoomRatio);
+        mZoomController.setZoomRatio(zoomRatio, ZoomController.ZOOM_UI_SEEK_BAR_MODE);
+        mMotionEventToZoomRatioConverter.setZoomRatio(zoomRatio);
+
+        return true;
     }
 
     @Override
