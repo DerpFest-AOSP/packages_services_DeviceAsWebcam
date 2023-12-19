@@ -1,0 +1,8 @@
+package: "com.android.deviceaswebcam.flags"
+
+flag {
+    namespace: "camera_platform"
+    name: "high_quality_toggle"
+    description: "Allow users to turn on 'High Quality' mode"
+    bug: "313179507"
+}

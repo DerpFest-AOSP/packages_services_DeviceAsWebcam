@@ -52,6 +52,18 @@
                 android:layout_height="@dimen/focus_indicator_size"
                 android:contentDescription="@null"
                 android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/high_quality_button"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top|left"
+                android:layout_marginTop="20dp"
+                android:layout_marginLeft="20dp"
+                android:background="@drawable/ic_high_quality_bg"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_high_quality_on" />
         </androidx.cardview.widget.CardView>
     </FrameLayout>
 

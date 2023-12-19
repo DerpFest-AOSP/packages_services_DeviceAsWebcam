@@ -2,6 +2,17 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+aconfig_declarations {
+    name: "device_as_webcam_flags",
+    package: "com.android.deviceaswebcam.flags",
+    srcs: ["device_as_webcam.aconfig"],
+}
+
+java_aconfig_library {
+    name: "device_as_webcam_flags_java_lib",
+    aconfig_declarations: "device_as_webcam_flags",
+}
+
 android_app {
     name: "DeviceAsWebcam",
 
@@ -10,6 +21,7 @@ android_app {
         "androidx.appcompat_appcompat",
         "androidx.cardview_cardview",
         "androidx.recyclerview_recyclerview",
+        "device_as_webcam_flags_java_lib"
     ],
 
     srcs: ["src/**/*.java"],

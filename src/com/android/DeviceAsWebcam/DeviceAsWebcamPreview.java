@@ -63,6 +63,7 @@ import androidx.cardview.widget.CardView;
 import com.android.DeviceAsWebcam.view.SelectorListItemData;
 import com.android.DeviceAsWebcam.view.SwitchCameraSelectorView;
 import com.android.DeviceAsWebcam.view.ZoomController;
+import com.android.deviceaswebcam.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +90,7 @@ public class DeviceAsWebcamPreview extends Activity {
     private View mFocusIndicator;
     private ZoomController mZoomController = null;
     private ImageButton mToggleCameraButton;
+    private ImageButton mHighQualityToggleButton;
     private SwitchCameraSelectorView mSwitchCameraSelectorView;
     private List<SelectorListItemData> mSelectorListItemDataList;
     // A listener to monitor the preview size change events. This might be invoked when toggling
@@ -352,7 +354,8 @@ public class DeviceAsWebcamPreview extends Activity {
         mSelectorListItemDataList = createSelectorItemDataList();
 
         mSwitchCameraSelectorView.init(getLayoutInflater(), mSelectorListItemDataList);
-        mSwitchCameraSelectorView.setRotation(mLocalFgService.getCurrentRotation());
+        mSwitchCameraSelectorView.rotateView(mLocalFgService.getCurrentRotation(),
+                /*animationDuration*/ 0L);
         mSwitchCameraSelectorView.setOnCameraSelectedListener(cameraId -> switchCamera(cameraId));
         mSwitchCameraSelectorView.updateSelectedItem(
                 mLocalFgService.getCameraInfo().getCameraId());
@@ -363,9 +366,47 @@ public class DeviceAsWebcamPreview extends Activity {
             mToggleCameraButton.setEnabled(visibility != View.VISIBLE);
             mZoomController.setEnabled(visibility != View.VISIBLE);
         });
+
+        updateHighQualityButtonState(mLocalFgService.isHighQualityModeEnabled());
+        mHighQualityToggleButton.setOnClickListener(v ->
+                setHighQualityMode(!mLocalFgService.isHighQualityModeEnabled()));
+    }
+
+    private void setHighQualityMode(boolean enabled) {
+        // Disable the toggle button to prevent spamming
+        mHighQualityToggleButton.setEnabled(false);
+        Runnable callback = () -> {
+            // Immediately delegate callback to UI thread to prevent blocking the thread that
+            // callback was called from.
+            runOnUiThread(() -> {
+                setupSwitchCameraSelector();
+                setupZoomUiControl();
+                rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation(),
+                        /*animationDuration*/ 0L);
+                mHighQualityToggleButton.setEnabled(true);
+            });
+        };
+        mLocalFgService.setHighQualityModeEnabled(enabled, callback);
+    }
+
+    private void updateHighQualityButtonState(boolean highQualityModeEnabled) {
+        int img = highQualityModeEnabled ?
+                R.drawable.ic_high_quality_on : R.drawable.ic_high_quality_off;
+        mHighQualityToggleButton.setImageResource(img);
+
+        // NOTE: This is "flipped" because if High Quality mode is enabled, we want the content
+        // description to say that it will be disabled when the button is pressed.
+        int contentDesc = highQualityModeEnabled ?
+                R.string.toggle_high_quality_description_off :
+                R.string.toggle_high_quality_description_on;
+        mHighQualityToggleButton.setContentDescription(getText(contentDesc));
     }
 
     private void rotateUiByRotationDegrees(int rotation) {
+        rotateUiByRotationDegrees(rotation, /*animate*/ ROTATION_ANIMATION_DURATION_MS);
+    }
+
+    private void rotateUiByRotationDegrees(int rotation, long animationDuration) {
         if (mLocalFgService == null) {
             // Don't do anything if no foreground service is connected
             return;
@@ -374,14 +415,16 @@ public class DeviceAsWebcamPreview extends Activity {
         runOnUiThread(() -> {
             ObjectAnimator anim = ObjectAnimator.ofFloat(mToggleCameraButton,
                             /*propertyName=*/"rotation", finalRotation)
-                    .setDuration(ROTATION_ANIMATION_DURATION_MS);
+                    .setDuration(animationDuration);
             anim.setInterpolator(new AccelerateDecelerateInterpolator());
             anim.start();
             mToggleCameraButton.performHapticFeedback(
                     HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE);
 
-            mZoomController.setTextDisplayRotation(finalRotation, ROTATION_ANIMATION_DURATION_MS);
-            mSwitchCameraSelectorView.setRotation(finalRotation);
+            mZoomController.setTextDisplayRotation(finalRotation, (int) animationDuration);
+            mSwitchCameraSelectorView.rotateView(finalRotation, animationDuration);
+            mHighQualityToggleButton.animate()
+                    .rotation(finalRotation).setDuration(animationDuration);
         });
     }
 
@@ -435,6 +478,7 @@ public class DeviceAsWebcamPreview extends Activity {
         mToggleCameraButton = findViewById(R.id.toggle_camera_button);
         mZoomController = findViewById(R.id.zoom_ui_controller);
         mSwitchCameraSelectorView = findViewById(R.id.switch_camera_selector_view);
+        mHighQualityToggleButton = findViewById(R.id.high_quality_button);
 
         mAccessibilityManager = getSystemService(AccessibilityManager.class);
         if (mAccessibilityManager != null) {
@@ -465,6 +509,10 @@ public class DeviceAsWebcamPreview extends Activity {
             }
             return WindowInsets.CONSUMED;
         });
+
+        if (!Flags.highQualityToggle()) {
+            mHighQualityToggleButton.setVisibility(View.GONE);
+        }
 
         bindService(new Intent(this, DeviceAsWebcamFgService.class), 0, mThreadExecutor,
                 mConnection);

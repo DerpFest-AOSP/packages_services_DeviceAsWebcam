@@ -23,6 +23,10 @@
     <color name="bg">@android:color/system_neutral2_900</color>
     <color name="button">@android:color/system_accent1_500</color>
 
+    <color name="high_quality_button_bg">#BF000000</color>
+    <color name="high_quality_on">@android:color/system_accent1_200</color>
+    <color name="high_quality_off">@android:color/system_accent2_400</color>
+
     <color name="zoom_knob_background_color">@android:color/system_accent1_500</color>
     <color name="zoom_seek_bar_background_color">#DB222222</color>
     <color name="zoom_seek_bar_stroke_color">#80FFFFFF</color>

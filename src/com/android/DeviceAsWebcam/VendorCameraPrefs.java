@@ -142,6 +142,17 @@ public class VendorCameraPrefs {
     }
 
     /**
+     * Returns an instance of {@link VendorCameraPrefs} that does not provide Physical
+     * Camera Mapping. Used for when we want to force CameraController to use the logical
+     * cameras. The returned VendorCameraPrefs still honors ignored cameras retrieved from
+     * {@link #getIgnoredCameralist}.
+     */
+    public static VendorCameraPrefs createEmptyVendorCameraPrefs(Context context) {
+        List<String> ignoredCameraList = getIgnoredCameralist(context);
+        return new VendorCameraPrefs(new ArrayMap<>(), ignoredCameraList);
+    }
+
+    /**
      * Reads the vendor camera preferences from the custom JSON files.
      *
      * @param context Application context which can be used to retrieve resources.
