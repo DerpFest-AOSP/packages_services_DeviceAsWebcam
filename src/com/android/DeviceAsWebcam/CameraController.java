@@ -672,7 +672,7 @@ public class CameraController {
                     " height " + height + " fps " + fps);
         }
         synchronized (mSerializationLock) {
-            long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN;
+            long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_VIDEO_ENCODE;
             mStreamConfigs = new StreamConfigs(mjpeg, width, height, fps);
             synchronized (mImgReaderLock) {
                 if (mImgReader != null) {
