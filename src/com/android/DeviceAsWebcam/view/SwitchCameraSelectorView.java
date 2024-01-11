@@ -23,7 +23,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -105,11 +104,13 @@ public class SwitchCameraSelectorView extends FrameLayout {
 
     /**
      * Rotates the switch camera selector dialog.
+     *
+     * NOTE: Set {@code animationDuration} to 0 for no animation
      */
-    public void setRotation(int rotation) {
+    public void rotateView(int rotation, long  animationDuration) {
         ObjectAnimator anim = ObjectAnimator.ofFloat(mRecyclerViewContainerView,
                         /*propertyName=*/"rotation", rotation)
-                .setDuration(300);
+                .setDuration(animationDuration);
         anim.setInterpolator(new AccelerateDecelerateInterpolator());
         anim.start();
     }

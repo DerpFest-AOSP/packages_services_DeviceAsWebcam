@@ -62,4 +62,5 @@
     <dimen name="list_item_top_bottom_height">8dp</dimen>
     <dimen name="list_item_radio_button_end_margin">24dp</dimen>
     <dimen name="list_item_radio_button_size">28dp</dimen>
+    <dimen name="checkbox_padding">8dp</dimen>
 </resources>
