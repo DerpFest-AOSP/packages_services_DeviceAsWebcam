@@ -23,10 +23,8 @@
     <string name="zoom_seek_bar_description" msgid="2820202610575014723">"ಝೂಮ್ ಸೀಕ್ ಬಾರ್"</string>
     <string name="toggle_camera_button_description_back" msgid="771773649789638243">"ಹಿಂಬದಿಯ ಕ್ಯಾಮರಾಕ್ಕೆ ಬದಲಿಸಿ"</string>
     <string name="toggle_camera_button_description_front" msgid="5248457301141397342">"ಮುಂಬದಿಯ ಕ್ಯಾಮರಾಕ್ಕೆ ಬದಲಿಸಿ"</string>
-    <!-- no translation found for toggle_high_quality_description_off (2185762274050207314) -->
-    <skip />
-    <!-- no translation found for toggle_high_quality_description_on (9118596060527830719) -->
-    <skip />
+    <string name="toggle_high_quality_description_off" msgid="2185762274050207314">"ಉತ್ತಮ ಗುಣಮಟ್ಟದ ಫೀಚರ್ ಅನ್ನು ಆಫ್ ಮಾಡಿ"</string>
+    <string name="toggle_high_quality_description_on" msgid="9118596060527830719">"ಉತ್ತಮ ಗುಣಮಟ್ಟದ ಫೀಚರ್ ಅನ್ನು ಆನ್ ಮಾಡಿ"</string>
     <string name="notif_channel_name" msgid="9012392302161214874">"ಮುನ್ನೆಲೆ ಸೇವೆ"</string>
     <string name="notif_ticker" msgid="6895154246348754766">"ವೆಬ್‌ಕ್ಯಾಮ್"</string>
     <string name="notif_title" msgid="3788815976102922209">"ವೆಬ್‌ಕ್ಯಾಮ್"</string>
@@ -36,8 +34,7 @@
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
     <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
     <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
-    <!-- no translation found for prefs_high_quality_mode_enabled (3746094349991090908) -->
-    <skip />
+    <string name="prefs_high_quality_mode_enabled" msgid="3746094349991090908">"high.quality.mode.enabled"</string>
     <string name="list_item_text_back_camera" msgid="2734532140746580971">"ಹಿಂಬದಿ ಕ್ಯಾಮರಾ"</string>
     <string name="list_item_text_front_camera" msgid="7273773310502952694">"ಮುಂಬದಿ ಕ್ಯಾಮರಾ"</string>
     <string name="list_item_text_standard_camera" msgid="4160445744347809472">"ಪ್ರಮಾಣಿತ ಕ್ಯಾಮರಾ"</string>
