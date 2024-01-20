@@ -23,10 +23,8 @@
     <string name="zoom_seek_bar_description" msgid="2820202610575014723">"Upau wa Kusogeza Ukuzaji"</string>
     <string name="toggle_camera_button_description_back" msgid="771773649789638243">"Tumia kamera ya nyuma"</string>
     <string name="toggle_camera_button_description_front" msgid="5248457301141397342">"Tumia kamera ya mbele"</string>
-    <!-- no translation found for toggle_high_quality_description_off (2185762274050207314) -->
-    <skip />
-    <!-- no translation found for toggle_high_quality_description_on (9118596060527830719) -->
-    <skip />
+    <string name="toggle_high_quality_description_off" msgid="2185762274050207314">"Zima hali ya Ubora wa Juu"</string>
+    <string name="toggle_high_quality_description_on" msgid="9118596060527830719">"Washa hali ya Ubora wa Juu"</string>
     <string name="notif_channel_name" msgid="9012392302161214874">"Huduma Inayoendeshwa Programu Inapotumika"</string>
     <string name="notif_ticker" msgid="6895154246348754766">"Kamera ya wavuti"</string>
     <string name="notif_title" msgid="3788815976102922209">"Kamera ya wavuti"</string>
@@ -36,8 +34,7 @@
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
     <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
     <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
-    <!-- no translation found for prefs_high_quality_mode_enabled (3746094349991090908) -->
-    <skip />
+    <string name="prefs_high_quality_mode_enabled" msgid="3746094349991090908">"hali ya ubora wa juu imewashwa"</string>
     <string name="list_item_text_back_camera" msgid="2734532140746580971">"Kamera ya nyuma"</string>
     <string name="list_item_text_front_camera" msgid="7273773310502952694">"Kamera ya mbele"</string>
     <string name="list_item_text_standard_camera" msgid="4160445744347809472">"Kamera ya kawaida"</string>
