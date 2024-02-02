@@ -23,11 +23,12 @@
 
         <activity android:name=".DeviceAsWebcamPreview"
             android:excludeFromRecents="true"
-            android:screenOrientation="portrait"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="user"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|smallestScreenSize"
             android:label="@string/app_label"
             android:theme="@style/ActivityTheme"
-            android:singleUser="true">
+            android:singleUser="true"
+            android:windowSoftInputMode="stateAlwaysHidden">
         </activity>
 
         <service

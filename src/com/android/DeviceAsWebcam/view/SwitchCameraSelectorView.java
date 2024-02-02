@@ -19,6 +19,8 @@ package com.android.DeviceAsWebcam.view;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.Display;
+import android.view.DisplayInfo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -47,6 +49,8 @@ public class SwitchCameraSelectorView extends FrameLayout {
     private RecyclerView.LayoutManager mLayoutManager;
     private Consumer<Integer> mVisibilityChangedListener = null;
 
+    private int mWidth = 0;
+
     public SwitchCameraSelectorView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
@@ -71,6 +75,16 @@ public class SwitchCameraSelectorView extends FrameLayout {
         mRecyclerView.setAdapter(mCameraDataAdapter);
 
         mRootView.setOnClickListener(v -> hide());
+
+        Display display = getContext().getDisplay();
+        DisplayInfo displayInfo = new DisplayInfo();
+        display.getDisplayInfo(displayInfo);
+
+        int largerDimension = Math.max(displayInfo.getNaturalWidth(),
+                displayInfo.getNaturalHeight());
+        int smallerDimension = Math.min(displayInfo.getNaturalWidth(),
+                displayInfo.getNaturalHeight());
+        mWidth = Math.min(smallerDimension, largerDimension / 2);
 
         // Hides the camera selector in the beginning
         hide();
@@ -98,6 +112,7 @@ public class SwitchCameraSelectorView extends FrameLayout {
                     (ConstraintLayout.LayoutParams) mRecyclerViewContainerView.getLayoutParams();
             lp.topMargin = finalMargin;
             lp.bottomMargin = finalMargin;
+            lp.width = mWidth;
             mRecyclerViewContainerView.setLayoutParams(lp);
         }
     }
@@ -107,7 +122,7 @@ public class SwitchCameraSelectorView extends FrameLayout {
      *
      * NOTE: Set {@code animationDuration} to 0 for no animation
      */
-    public void rotateView(int rotation, long  animationDuration) {
+    public void rotateView(int rotation, long animationDuration) {
         ObjectAnimator anim = ObjectAnimator.ofFloat(mRecyclerViewContainerView,
                         /*propertyName=*/"rotation", rotation)
                 .setDuration(animationDuration);
