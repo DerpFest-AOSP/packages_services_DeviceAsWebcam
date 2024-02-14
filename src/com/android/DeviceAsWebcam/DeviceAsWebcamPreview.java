@@ -22,6 +22,7 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -58,6 +59,8 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 
@@ -66,6 +69,7 @@ import androidx.cardview.widget.CardView;
 import androidx.window.layout.WindowMetrics;
 import androidx.window.layout.WindowMetricsCalculator;
 
+import com.android.DeviceAsWebcam.utils.UserPrefs;
 import com.android.DeviceAsWebcam.view.SelectorListItemData;
 import com.android.DeviceAsWebcam.view.SwitchCameraSelectorView;
 import com.android.DeviceAsWebcam.view.ZoomController;
@@ -102,6 +106,8 @@ public class DeviceAsWebcamPreview extends Activity {
     private ImageButton mHighQualityToggleButton;
     private SwitchCameraSelectorView mSwitchCameraSelectorView;
     private List<SelectorListItemData> mSelectorListItemDataList;
+
+    private UserPrefs mUserPrefs;
 
     // A listener to monitor the preview size change events. This might be invoked when toggling
     // camera or the webcam stream is started after the preview stream.
@@ -460,13 +466,46 @@ public class DeviceAsWebcamPreview extends Activity {
         });
 
         updateHighQualityButtonState(mLocalFgService.isHighQualityModeEnabled());
-        mHighQualityToggleButton.setOnClickListener(v ->
-                setHighQualityMode(!mLocalFgService.isHighQualityModeEnabled()));
+        mHighQualityToggleButton.setOnClickListener(v -> {
+            // Disable the toggle button to prevent spamming
+            mHighQualityToggleButton.setEnabled(false);
+            toggleHQWithWarningIfNeeded();
+        });
+    }
+
+    private void toggleHQWithWarningIfNeeded() {
+        boolean targetHqMode = !mLocalFgService.isHighQualityModeEnabled();
+        boolean warningEnabled = mUserPrefs.fetchHighQualityWarningEnabled(
+                /*defaultValue=*/ true);
+
+        // No need to show the dialog if HQ mode is being turned off, or if the user has
+        // explicitly clicked "Don't show again" before.
+        if (!targetHqMode || !warningEnabled) {
+            setHighQualityMode(targetHqMode);
+            return;
+        }
+
+        AlertDialog alertDialog = new AlertDialog.Builder(/*context=*/ this)
+                .setCancelable(false)
+                .create();
+
+        View customView = alertDialog.getLayoutInflater().inflate(
+                R.layout.hq_dialog_warning, /*root=*/ null);
+        alertDialog.setView(customView);
+        CheckBox dontShow = customView.findViewById(R.id.hq_warning_dont_show_again_checkbox);
+        dontShow.setOnCheckedChangeListener(
+                (buttonView, isChecked) -> mUserPrefs.storeHighQualityWarningEnabled(!isChecked));
+
+        Button ackButton = customView.findViewById(R.id.hq_warning_ack_button);
+        ackButton.setOnClickListener(v -> {
+            setHighQualityMode(true);
+            alertDialog.dismiss();
+        });
+
+        alertDialog.show();
     }
 
     private void setHighQualityMode(boolean enabled) {
-        // Disable the toggle button to prevent spamming
-        mHighQualityToggleButton.setEnabled(false);
         Runnable callback = () -> {
             // Immediately delegate callback to UI thread to prevent blocking the thread that
             // callback was called from.
@@ -584,6 +623,8 @@ public class DeviceAsWebcamPreview extends Activity {
             mAccessibilityManager.addAccessibilityServicesStateChangeListener(
                     mAccessibilityListener);
         }
+
+        mUserPrefs = new UserPrefs(this.getApplicationContext());
 
         setupMainLayout();
 
