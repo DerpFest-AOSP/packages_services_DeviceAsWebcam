@@ -28,7 +28,7 @@
     <string name="notif_channel_name" msgid="9012392302161214874">"फोरग्राउंड सेवा"</string>
     <string name="notif_ticker" msgid="6895154246348754766">"वेबकॅम"</string>
     <string name="notif_title" msgid="3788815976102922209">"वेबकॅम"</string>
-    <string name="notif_desc" msgid="1433178383086179212">"वेबकॅम आउटपुटचे पूर्वावलोकन आणि ते कॉंफिगर करण्यासाठी टॅप करा"</string>
+    <string name="notif_desc" msgid="1433178383086179212">"वेबकॅम आउटपुटचे पूर्वावलोकन आणि ते कॉन्फिगर करण्यासाठी टॅप करा"</string>
     <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
     <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
