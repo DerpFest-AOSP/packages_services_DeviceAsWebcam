@@ -124,4 +124,15 @@ public class UserPrefs {
                 enabled);
         mPrefsEditor.apply();
     }
+
+    public synchronized boolean fetchHighQualityWarningEnabled(boolean defaultValue) {
+        return mPrefs.getBoolean(mContext.getString(R.string.prefs_high_quality_warning_enabled),
+                defaultValue);
+    }
+
+    public synchronized void storeHighQualityWarningEnabled(boolean value) {
+        mPrefsEditor.putBoolean(mContext.getString(R.string.prefs_high_quality_warning_enabled),
+                value);
+        mPrefsEditor.apply();
+    }
 }
