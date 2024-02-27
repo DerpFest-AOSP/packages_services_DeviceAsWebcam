@@ -21,7 +21,6 @@ import static android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -66,22 +65,22 @@ import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
+import androidx.fragment.app.FragmentActivity;
 import androidx.window.layout.WindowMetrics;
 import androidx.window.layout.WindowMetricsCalculator;
 
 import com.android.DeviceAsWebcam.utils.UserPrefs;
-import com.android.DeviceAsWebcam.view.SelectorListItemData;
-import com.android.DeviceAsWebcam.view.SwitchCameraSelectorView;
+import com.android.DeviceAsWebcam.view.CameraPickerDialog;
 import com.android.DeviceAsWebcam.view.ZoomController;
 import com.android.deviceaswebcam.flags.Flags;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-public class DeviceAsWebcamPreview extends Activity {
+public class DeviceAsWebcamPreview extends FragmentActivity {
     private static final String TAG = DeviceAsWebcamPreview.class.getSimpleName();
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final int ROTATION_ANIMATION_DURATION_MS = 300;
@@ -104,8 +103,7 @@ public class DeviceAsWebcamPreview extends Activity {
     private ZoomController mZoomController = null;
     private ImageButton mToggleCameraButton;
     private ImageButton mHighQualityToggleButton;
-    private SwitchCameraSelectorView mSwitchCameraSelectorView;
-    private List<SelectorListItemData> mSelectorListItemDataList;
+    private CameraPickerDialog mCameraPickerDialog;
 
     private UserPrefs mUserPrefs;
 
@@ -189,12 +187,13 @@ public class DeviceAsWebcamPreview extends Activity {
                             if (canToggleCamera()) {
                                 mToggleCameraButton.setOnClickListener(v -> toggleCamera());
                             } else {
-                                mToggleCameraButton.setOnClickListener(v -> {
-                                    mSwitchCameraSelectorView.show();
-                                });
+                                mToggleCameraButton.setOnClickListener(
+                                        v -> mCameraPickerDialog.show(getSupportFragmentManager(),
+                                                "CameraPickerDialog"));
                             }
                             mToggleCameraButton.setOnLongClickListener(v -> {
-                                mSwitchCameraSelectorView.show();
+                                mCameraPickerDialog.show(getSupportFragmentManager(),
+                                        "CameraPickerDialog");
                                 return true;
                             });
                         } else {
@@ -449,21 +448,8 @@ public class DeviceAsWebcamPreview extends Activity {
             return;
         }
         setToggleCameraContentDescription();
-        mSelectorListItemDataList = createSelectorItemDataList();
-
-        mSwitchCameraSelectorView.init(getLayoutInflater(), mSelectorListItemDataList);
-        mSwitchCameraSelectorView.rotateView(mLocalFgService.getCurrentRotation(),
-                /*animationDuration*/ 0L);
-        mSwitchCameraSelectorView.setOnCameraSelectedListener(cameraId -> switchCamera(cameraId));
-        mSwitchCameraSelectorView.updateSelectedItem(
+        mCameraPickerDialog.updateAvailableCameras(createCameraListForPicker(),
                 mLocalFgService.getCameraInfo().getCameraId());
-
-        // Dynamically enable/disable the toggle button and zoom controller so that the behaviors
-        // under accessibility mode will be correct.
-        mSwitchCameraSelectorView.setOnVisibilityChangedListener(visibility -> {
-            mToggleCameraButton.setEnabled(visibility != View.VISIBLE);
-            mZoomController.setEnabled(visibility != View.VISIBLE);
-        });
 
         updateHighQualityButtonState(mLocalFgService.isHighQualityModeEnabled());
         mHighQualityToggleButton.setOnClickListener(v -> {
@@ -553,7 +539,6 @@ public class DeviceAsWebcamPreview extends Activity {
                     HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE);
 
             mZoomController.setTextDisplayRotation(finalRotation, (int) animationDuration);
-            mSwitchCameraSelectorView.rotateView(finalRotation, animationDuration);
             mHighQualityToggleButton.animate()
                     .rotation(finalRotation).setDuration(animationDuration);
         });
@@ -609,7 +594,6 @@ public class DeviceAsWebcamPreview extends Activity {
         mFocusIndicator.setBackground(createFocusIndicatorDrawable());
         mToggleCameraButton = findViewById(R.id.toggle_camera_button);
         mZoomController = findViewById(R.id.zoom_ui_controller);
-        mSwitchCameraSelectorView = findViewById(R.id.switch_camera_selector_view);
         mHighQualityToggleButton = findViewById(R.id.high_quality_button);
 
         // Use "seamless" animation for rotations as we fix the UI relative to the device.
@@ -625,6 +609,7 @@ public class DeviceAsWebcamPreview extends Activity {
         }
 
         mUserPrefs = new UserPrefs(this.getApplicationContext());
+        mCameraPickerDialog = new CameraPickerDialog(this::switchCamera);
 
         setupMainLayout();
 
@@ -811,8 +796,7 @@ public class DeviceAsWebcamPreview extends Activity {
         setupZoomRatioSeekBar();
         mZoomController.setZoomRatio(mLocalFgService.getZoomRatio(),
                 ZoomController.ZOOM_UI_TOGGLE_MODE);
-        mSwitchCameraSelectorView.updateSelectedItem(
-                mLocalFgService.getCameraInfo().getCameraId());
+        mCameraPickerDialog.updateSelectedCamera(mLocalFgService.getCameraInfo().getCameraId());
     }
 
     private void switchCamera(CameraId cameraId) {
@@ -827,6 +811,9 @@ public class DeviceAsWebcamPreview extends Activity {
         setupZoomRatioSeekBar();
         mZoomController.setZoomRatio(mLocalFgService.getZoomRatio(),
                 ZoomController.ZOOM_UI_TOGGLE_MODE);
+        // CameraPickerDialog does not update its UI until the preview activity
+        // notifies it of the change. So notify CameraPickerDialog about the camera change.
+        mCameraPickerDialog.updateSelectedCamera(cameraId);
     }
 
     private boolean tapToFocus(MotionEvent motionEvent) {
@@ -894,38 +881,17 @@ public class DeviceAsWebcamPreview extends Activity {
         mFocusIndicator.setVisibility(View.VISIBLE);
     }
 
-    private List<SelectorListItemData> createSelectorItemDataList() {
-        List<SelectorListItemData> selectorItemDataList = new ArrayList<>();
-        addSelectorItemDataByLensFacing(selectorItemDataList,
-                CameraCharacteristics.LENS_FACING_BACK);
-        addSelectorItemDataByLensFacing(selectorItemDataList,
-                CameraCharacteristics.LENS_FACING_FRONT);
-
-        return selectorItemDataList;
-    }
-
-    private void addSelectorItemDataByLensFacing(List<SelectorListItemData> selectorItemDataList,
-            int targetLensFacing) {
-        if (mLocalFgService == null) {
-            return;
+    private List<CameraPickerDialog.ListItem> createCameraListForPicker() {
+        List<CameraId> availableCameraIds = mLocalFgService.getAvailableCameraIds();
+        if (availableCameraIds == null) {
+            Log.w(TAG, "No cameras listed for picker. Why is Webcam Service running?");
+            return List.of();
         }
 
-        boolean lensFacingHeaderAdded = false;
-
-        for (CameraId cameraId : mLocalFgService.getAvailableCameraIds()) {
-            CameraInfo cameraInfo = mLocalFgService.getOrCreateCameraInfo(cameraId);
-
-            if (cameraInfo.getLensFacing() == targetLensFacing) {
-                if (!lensFacingHeaderAdded) {
-                    selectorItemDataList.add(
-                            SelectorListItemData.createHeaderItemData(targetLensFacing));
-                    lensFacingHeaderAdded = true;
-                }
-
-                selectorItemDataList.add(SelectorListItemData.createCameraItemData(
-                        cameraInfo));
-            }
-
-        }
+        return availableCameraIds.stream()
+                .map(mLocalFgService::getOrCreateCameraInfo)
+                .filter(Objects::nonNull)
+                .map(CameraPickerDialog.ListItem::new)
+                .toList();
     }
 }

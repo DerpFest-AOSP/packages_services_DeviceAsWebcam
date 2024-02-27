@@ -27,7 +27,10 @@ android_app {
         "device_as_webcam_flags_java_lib",
     ],
 
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     platform_apis: true,
     certificate: "platform",
     privileged: true,

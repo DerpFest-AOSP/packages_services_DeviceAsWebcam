@@ -23,6 +23,13 @@
     <color name="bg">@android:color/system_neutral2_900</color>
     <color name="button">@android:color/system_accent1_500</color>
 
+    <color name="selector_dialog_bg">@android:color/system_neutral1_900</color>
+    <color name="selector_dialog_list_header">@android:color/system_neutral1_900</color>
+    <color name="selector_dialog_list_item">@android:color/system_neutral1_900</color>
+    <color name="selector_dialog_list_radio_button">@android:color/system_neutral1_900</color>
+    <color name="selector_dialog_list_ripple">@android:color/system_accent1_700</color>
+    <color name="list_item_camera_item_primary_color">#FFDDDDDD</color>
+
     <color name="high_quality_button_bg">#BF000000</color>
     <color name="high_quality_on">@android:color/system_accent1_200</color>
     <color name="high_quality_off">@android:color/system_accent2_400</color>
@@ -36,8 +43,4 @@
     <color name="zoom_ui_toggle_bar_text_color">#FFFFFF</color>
 
     <color name="focus_indicator_background_color">#40FFFFFF</color>
-
-    <color name="camera_selector_bg_color">#60000000</color>
-    <color name="camera_selector_dialog_bg_color">#A0000000</color>
-    <color name="list_item_camera_item_primary_color">#FFDDDDDD</color>
 </resources>
