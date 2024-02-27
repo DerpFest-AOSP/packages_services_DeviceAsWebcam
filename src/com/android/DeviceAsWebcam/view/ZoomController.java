@@ -456,9 +456,9 @@ public class ZoomController extends FrameLayout {
      * Rounds the input float zoom ratio value with RoundingMode.HALF_UP to one decimal digit.
      */
     static float roundZoomRatio(float zoomRatio) {
-        float normalizedZoomValue = (float) (Math.round(zoomRatio * 100) / 100.0);
-        BigDecimal bigDec = new BigDecimal(normalizedZoomValue);
-        return bigDec.setScale(2, RoundingMode.HALF_UP).floatValue();
+        // Keep one decimal digit since; we also follow the same in convertZoomRatioToString()
+        BigDecimal bigDec = new BigDecimal(zoomRatio);
+        return bigDec.setScale(1, RoundingMode.HALF_UP).floatValue();
     }
 
     /**
