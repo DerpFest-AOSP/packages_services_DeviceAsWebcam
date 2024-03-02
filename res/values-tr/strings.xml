@@ -29,12 +29,24 @@
     <string name="notif_ticker" msgid="6895154246348754766">"Web kamerası"</string>
     <string name="notif_title" msgid="3788815976102922209">"Web kamerası"</string>
     <string name="notif_desc" msgid="1433178383086179212">"Web kamerası çıkışını önizlemek ve yapılandırmak için dokunun"</string>
+    <!-- no translation found for hq_warning_dialog_title (5693009152902735897) -->
+    <skip />
+    <!-- no translation found for hq_warning_dialog_content_1 (4007864550827450633) -->
+    <skip />
+    <!-- no translation found for hq_warning_dialog_content_2 (877003832685705287) -->
+    <skip />
+    <!-- no translation found for hq_warning_dialog_dont_show_again (4409604672514060572) -->
+    <skip />
+    <!-- no translation found for hq_warning_dialog_button_ack (279514965669603856) -->
+    <skip />
     <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
     <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
     <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
     <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
     <string name="prefs_high_quality_mode_enabled" msgid="3746094349991090908">"high.quality.mode.enabled"</string>
+    <!-- no translation found for prefs_high_quality_warning_enabled (696012337719400975) -->
+    <skip />
     <string name="list_item_text_back_camera" msgid="2734532140746580971">"Arka kamera"</string>
     <string name="list_item_text_front_camera" msgid="7273773310502952694">"Ön kamera"</string>
     <string name="list_item_text_standard_camera" msgid="4160445744347809472">"Standart kamera"</string>
