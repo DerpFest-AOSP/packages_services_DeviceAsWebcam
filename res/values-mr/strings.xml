@@ -29,24 +29,18 @@
     <string name="notif_ticker" msgid="6895154246348754766">"वेबकॅम"</string>
     <string name="notif_title" msgid="3788815976102922209">"वेबकॅम"</string>
     <string name="notif_desc" msgid="1433178383086179212">"वेबकॅम आउटपुटचे पूर्वावलोकन आणि ते कॉन्फिगर करण्यासाठी टॅप करा"</string>
-    <!-- no translation found for hq_warning_dialog_title (5693009152902735897) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_content_1 (4007864550827450633) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_content_2 (877003832685705287) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_dont_show_again (4409604672514060572) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_button_ack (279514965669603856) -->
-    <skip />
+    <string name="hq_warning_dialog_title" msgid="5693009152902735897">"उच्च गुणवत्ता मोड"</string>
+    <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"वेबकॅमच्या गुणवत्तेमध्ये सुधारणा करण्यासाठी उच्च गुणवत्ता मोड पॉवर ऑप्टिमायझेशन बंद करतो. हा मोड वापरल्यामुळे लक्षणीय प्रमाणात पॉवर वापरली जाऊ शकते, ज्यामुळे डिव्हाइस गरम होण्याची शक्यता असते."</string>
+    <string name="hq_warning_dialog_content_2" msgid="877003832685705287"><b><u>"चेतावणी:"</u></b>" हे डिव्हाइस उच्च तापमानावर दीर्घकाळ वापरल्यास, त्याच्या बॅटरीच्या स्थितीवर दीर्घकालीन प्रतिकूल परिणाम होऊ शकतो."</string>
+    <string name="hq_warning_dialog_dont_show_again" msgid="4409604672514060572">"पुन्हा दाखवू नका"</string>
+    <string name="hq_warning_dialog_button_ack" msgid="279514965669603856">"स्वीकारा"</string>
     <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
     <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
     <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
     <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
     <string name="prefs_high_quality_mode_enabled" msgid="3746094349991090908">"high.quality.mode.enabled"</string>
-    <!-- no translation found for prefs_high_quality_warning_enabled (696012337719400975) -->
-    <skip />
+    <string name="prefs_high_quality_warning_enabled" msgid="696012337719400975">"उच्च.गुणवत्ता.चेतावणी.सुरू केली आहे"</string>
     <string name="list_item_text_back_camera" msgid="2734532140746580971">"बॅक कॅमेरा"</string>
     <string name="list_item_text_front_camera" msgid="7273773310502952694">"फ्रंट कॅमेरा"</string>
     <string name="list_item_text_standard_camera" msgid="4160445744347809472">"साधारण कॅमेरा"</string>

@@ -29,24 +29,18 @@
     <string name="notif_ticker" msgid="6895154246348754766">"Uebkamera"</string>
     <string name="notif_title" msgid="3788815976102922209">"Uebkamera"</string>
     <string name="notif_desc" msgid="1433178383086179212">"Trokit për të parë versionin paraprak dhe për të konfiguruar daljen e uebkamerës"</string>
-    <!-- no translation found for hq_warning_dialog_title (5693009152902735897) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_content_1 (4007864550827450633) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_content_2 (877003832685705287) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_dont_show_again (4409604672514060572) -->
-    <skip />
-    <!-- no translation found for hq_warning_dialog_button_ack (279514965669603856) -->
-    <skip />
+    <string name="hq_warning_dialog_title" msgid="5693009152902735897">"Modaliteti i cilësisë së lartë"</string>
+    <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"\"Modaliteti i cilësisë së lartë\" çaktivizon optimizimet e energjisë për të përmirësuar cilësinë e uebkamerës. Përdorimi i këtij modaliteti mund të shkaktojë konsum të lartë të energjisë, çka mund të nxehë pajisjen.‏"</string>
+    <string name="hq_warning_dialog_content_2" msgid="877003832685705287"><b><u>"PARALAJMËRIM:"</u></b>" Përdorimi i zgjatur në temperatura të larta mund të ketë një efekt negativ në gjendjen afatgjatë të baterisë së kësaj pajisjeje."</string>
+    <string name="hq_warning_dialog_dont_show_again" msgid="4409604672514060572">"Mos e shfaq më"</string>
+    <string name="hq_warning_dialog_button_ack" msgid="279514965669603856">"Pranoj"</string>
     <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
     <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
     <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
     <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
     <string name="prefs_high_quality_mode_enabled" msgid="3746094349991090908">"modaliteti me cilësi të lartë u aktivizua"</string>
-    <!-- no translation found for prefs_high_quality_warning_enabled (696012337719400975) -->
-    <skip />
+    <string name="prefs_high_quality_warning_enabled" msgid="696012337719400975">"high.quality.warning.enabled"</string>
     <string name="list_item_text_back_camera" msgid="2734532140746580971">"Kamera e pasme"</string>
     <string name="list_item_text_front_camera" msgid="7273773310502952694">"Kamera e përparme"</string>
     <string name="list_item_text_standard_camera" msgid="4160445744347809472">"Kamera standarde"</string>
