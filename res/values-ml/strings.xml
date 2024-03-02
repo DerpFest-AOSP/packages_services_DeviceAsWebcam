@@ -29,12 +29,18 @@
     <string name="notif_ticker" msgid="6895154246348754766">"വെബ്ക്യാം"</string>
     <string name="notif_title" msgid="3788815976102922209">"വെബ്ക്യാം"</string>
     <string name="notif_desc" msgid="1433178383086179212">"വെബ്ക്യാം ഔട്ട്‌പുട്ട് പ്രിവ്യൂ ചെയ്യാനും കോൺഫിഗർ ചെയ്യാനും ടാപ്പ് ചെയ്യുക"</string>
+    <string name="hq_warning_dialog_title" msgid="5693009152902735897">"ഉയർന്ന നിലവാരം മോഡ്"</string>
+    <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"വെബ്ക്യാം നിലവാരം മെച്ചപ്പെടുത്താൻ, ഉയർന്ന നിലവാരം മോഡ്, പവർ ഒപ്റ്റിമൈസേഷൻ പ്രവർത്തനരഹിതമാക്കും. ഈ മോഡ് ഉപയോഗിക്കുന്നത്, ഉപകരണം ചൂടാകാൻ ഇടവരുത്തുന്ന പവർ ഡ്രോയ്ക്ക് കാരണമായേക്കാം."</string>
+    <string name="hq_warning_dialog_content_2" msgid="877003832685705287"><b><u>"മുന്നറിയിപ്പ്:"</u></b>" ഉയർന്ന താപനിലയിൽ ദീർഘനേരത്തേക്ക് ഉപയോഗിക്കുന്നത്, ഈ ഉപകരണത്തിന്റെ ദീർഘകാല ബാറ്ററി ക്ഷമതയെ പ്രതികൂലമായി ബാധിച്ചേക്കാം."</string>
+    <string name="hq_warning_dialog_dont_show_again" msgid="4409604672514060572">"വീണ്ടും കാണിക്കരുത്"</string>
+    <string name="hq_warning_dialog_button_ack" msgid="279514965669603856">"അംഗീകരിക്കുക"</string>
     <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
     <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
     <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
     <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
     <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
     <string name="prefs_high_quality_mode_enabled" msgid="3746094349991090908">"high.quality.mode.enabled"</string>
+    <string name="prefs_high_quality_warning_enabled" msgid="696012337719400975">"high.quality.warning.enabled"</string>
     <string name="list_item_text_back_camera" msgid="2734532140746580971">"പിന്നിലെ ക്യാമറ"</string>
     <string name="list_item_text_front_camera" msgid="7273773310502952694">"മുന്നിലെ ക്യാമറ"</string>
     <string name="list_item_text_standard_camera" msgid="4160445744347809472">"സ്‌റ്റാൻഡേർഡ് ക്യാമറ"</string>
