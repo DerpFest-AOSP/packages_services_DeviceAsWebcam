@@ -49,7 +49,7 @@
     <dimen name="focus_indicator_size">64dp</dimen>
     <dimen name="focus_indicator_stroke_width">2dp</dimen>
 
-    <dimen name="preview_margin_top_min">10dp</dimen>
+    <dimen name="root_view_padding_top_min">10dp</dimen>
 
     <dimen name="list_item_camera_item_start_margin">32dp</dimen>
     <dimen name="list_item_drawable_padding">4dp</dimen>
