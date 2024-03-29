@@ -26,8 +26,8 @@
     <string name="toggle_high_quality_description_off" msgid="2185762274050207314">"Вимкнути високу якість"</string>
     <string name="toggle_high_quality_description_on" msgid="9118596060527830719">"Увімкнути високу якість"</string>
     <string name="notif_channel_name" msgid="9012392302161214874">"Активний сервіс"</string>
-    <string name="notif_ticker" msgid="6895154246348754766">"Веб-камера"</string>
-    <string name="notif_title" msgid="3788815976102922209">"Веб-камера"</string>
+    <string name="notif_ticker" msgid="6895154246348754766">"Вебкамера"</string>
+    <string name="notif_title" msgid="3788815976102922209">"Вебкамера"</string>
     <string name="notif_desc" msgid="1433178383086179212">"Натисніть, щоб переглянути й налаштувати відео з веб-камери"</string>
     <string name="hq_warning_dialog_title" msgid="5693009152902735897">"Режим високої якості"</string>
     <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"У режимі високої якості вимикається оптимізація живлення, щоб покращити якість зображення з вебкамери. У цьому режимі може споживатися значно більше живлення й пристрій може нагріватися."</string>
