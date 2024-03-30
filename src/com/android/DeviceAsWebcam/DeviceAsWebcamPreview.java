@@ -350,33 +350,43 @@ public class DeviceAsWebcamPreview extends FragmentActivity {
         rootParams.height = mCurrDisplaySize.getHeight();
         mRootView.setLayoutParams(rootParams);
 
-        // Counter-rotate the view to undo device's rotation
-        // Also add margin to the preview to ensure it doesn't clip any cutouts.
-        int topMargin = (int) getResources().getDimension(R.dimen.preview_margin_top_min);
+        // Counter rotate the main view and update padding values so we don't draw under
+        // cutouts. The cutout values we get are relative to the user.
+        int minTopPadding = (int) getResources().getDimension(R.dimen.root_view_padding_top_min);
         switch (mCurrRotation) {
             case Surface.ROTATION_90:
                 mRootView.setRotation(-90);
-                topMargin = Math.max(topMargin, displayCutout.getSafeInsetLeft());
+                mRootView.setPadding(
+                        /*left=*/ displayCutout.getSafeInsetBottom(),
+                        /*top=*/ Math.max(minTopPadding, displayCutout.getSafeInsetLeft()),
+                        /*right=*/ displayCutout.getSafeInsetTop(),
+                        /*bottom=*/ displayCutout.getSafeInsetRight());
                 break;
             case Surface.ROTATION_270:
                 mRootView.setRotation(90);
-                topMargin = Math.max(topMargin, displayCutout.getSafeInsetRight());
+                mRootView.setPadding(
+                        /*left=*/ displayCutout.getSafeInsetTop(),
+                        /*top=*/ Math.max(minTopPadding, displayCutout.getSafeInsetRight()),
+                        /*right=*/ displayCutout.getSafeInsetBottom(),
+                        /*bottom=*/ displayCutout.getSafeInsetLeft());
                 break;
             case Surface.ROTATION_0:
                 mRootView.setRotation(0);
-                topMargin = Math.max(topMargin, displayCutout.getSafeInsetTop());
+                mRootView.setPadding(
+                        /*left=*/ displayCutout.getSafeInsetLeft(),
+                        /*top=*/ Math.max(minTopPadding, displayCutout.getSafeInsetTop()),
+                        /*right=*/ displayCutout.getSafeInsetRight(),
+                        /*bottom=*/ displayCutout.getSafeInsetBottom());
                 break;
             case Surface.ROTATION_180:
                 mRootView.setRotation(180);
-                topMargin = Math.max(topMargin, displayCutout.getSafeInsetBottom());
+                mRootView.setPadding(
+                        /*left=*/displayCutout.getSafeInsetRight(),
+                        /*top=*/Math.max(minTopPadding, displayCutout.getSafeInsetBottom()),
+                        /*right=*/displayCutout.getSafeInsetLeft(),
+                        /*bottom=*/displayCutout.getSafeInsetTop());
                 break;
         }
-
-        ViewGroup.MarginLayoutParams layoutParams =
-                (ViewGroup.MarginLayoutParams) mTextureViewContainer.getLayoutParams();
-        layoutParams.topMargin = topMargin;
-        mTextureViewContainer.setLayoutParams(layoutParams);
-
         // subscribe to layout changes of the texture view container so we can
         // resize the texture view once the container has been drawn with the new
         // margins
