@@ -21,13 +21,13 @@ import static android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Insets;
 import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.BitmapDrawable;
@@ -42,35 +42,45 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
+import android.view.DisplayCutout;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 
+import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
+import androidx.fragment.app.FragmentActivity;
+import androidx.window.layout.WindowMetrics;
+import androidx.window.layout.WindowMetricsCalculator;
 
-import com.android.DeviceAsWebcam.view.SelectorListItemData;
-import com.android.DeviceAsWebcam.view.SwitchCameraSelectorView;
+import com.android.DeviceAsWebcam.utils.UserPrefs;
+import com.android.DeviceAsWebcam.view.CameraPickerDialog;
 import com.android.DeviceAsWebcam.view.ZoomController;
+import com.android.deviceaswebcam.flags.Flags;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-public class DeviceAsWebcamPreview extends Activity {
+public class DeviceAsWebcamPreview extends FragmentActivity {
     private static final String TAG = DeviceAsWebcamPreview.class.getSimpleName();
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final int ROTATION_ANIMATION_DURATION_MS = 300;
@@ -82,15 +92,21 @@ public class DeviceAsWebcamPreview extends Activity {
     private Size mPreviewSize;
     private DeviceAsWebcamFgService mLocalFgService;
     private AccessibilityManager mAccessibilityManager;
+    private int mCurrRotation = Surface.ROTATION_0;
+    private Size mCurrDisplaySize = new Size(0, 0);
 
+    private View mRootView;
     private FrameLayout mTextureViewContainer;
     private CardView mTextureViewCard;
     private TextureView mTextureView;
     private View mFocusIndicator;
     private ZoomController mZoomController = null;
     private ImageButton mToggleCameraButton;
-    private SwitchCameraSelectorView mSwitchCameraSelectorView;
-    private List<SelectorListItemData> mSelectorListItemDataList;
+    private ImageButton mHighQualityToggleButton;
+    private CameraPickerDialog mCameraPickerDialog;
+
+    private UserPrefs mUserPrefs;
+
     // A listener to monitor the preview size change events. This might be invoked when toggling
     // camera or the webcam stream is started after the preview stream.
     Consumer<Size> mPreviewSizeChangeListener = size -> runOnUiThread(() -> {
@@ -171,12 +187,13 @@ public class DeviceAsWebcamPreview extends Activity {
                             if (canToggleCamera()) {
                                 mToggleCameraButton.setOnClickListener(v -> toggleCamera());
                             } else {
-                                mToggleCameraButton.setOnClickListener(v -> {
-                                    mSwitchCameraSelectorView.show();
-                                });
+                                mToggleCameraButton.setOnClickListener(
+                                        v -> mCameraPickerDialog.show(getSupportFragmentManager(),
+                                                "CameraPickerDialog"));
                             }
                             mToggleCameraButton.setOnLongClickListener(v -> {
-                                mSwitchCameraSelectorView.show();
+                                mCameraPickerDialog.show(getSupportFragmentManager(),
+                                        "CameraPickerDialog");
                                 return true;
                             });
                         } else {
@@ -184,7 +201,9 @@ public class DeviceAsWebcamPreview extends Activity {
                         }
                         rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation());
                         mLocalFgService.setRotationUpdateListener(
-                                rotation -> rotateUiByRotationDegrees(rotation));
+                                rotation -> {
+                                    rotateUiByRotationDegrees(rotation);
+                                });
                     });
                 }
 
@@ -285,6 +304,86 @@ public class DeviceAsWebcamPreview extends Activity {
         mTextureViewCard.setLayoutParams(cardLayoutParams);
     }
 
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        runOnUiThread(this::setupMainLayout);
+    }
+
+    private void setupMainLayout() {
+        int currRotation = getDisplay().getRotation();
+        WindowMetrics windowMetrics =
+                WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(this);
+        Size displaySize;
+        int width = windowMetrics.getBounds().width();
+        int height = windowMetrics.getBounds().height();
+        if (currRotation == Surface.ROTATION_90 || currRotation == Surface.ROTATION_270) {
+            // flip height and width because we want the height and width if the display
+            // in its natural orientation
+            displaySize = new Size(/*width=*/ height, /*height=*/ width);
+        } else {
+            displaySize = new Size(width, height);
+        }
+
+        if (mCurrRotation == currRotation && mCurrDisplaySize.equals(displaySize)) {
+            // Exit early if we have already drawn the UI for this state.
+            return;
+        }
+
+        mCurrDisplaySize = displaySize;
+        mCurrRotation = currRotation;
+
+        DisplayCutout displayCutout =
+                getWindowManager().getCurrentWindowMetrics().getWindowInsets().getDisplayCutout();
+        if (displayCutout == null) {
+            displayCutout = DisplayCutout.NO_CUTOUT;
+        }
+
+        // We set up the UI to always be fixed to the device's natural orientation.
+        // If the device is rotated, we counter-rotate the UI to ensure that
+        // our UI has a "locked" orientation.
+
+        // resize the root view to match the display. Full screen preview covers the entire
+        // screen
+        ViewGroup.LayoutParams rootParams = mRootView.getLayoutParams();
+        rootParams.width = mCurrDisplaySize.getWidth();
+        rootParams.height = mCurrDisplaySize.getHeight();
+        mRootView.setLayoutParams(rootParams);
+
+        // Counter-rotate the view to undo device's rotation
+        // Also add margin to the preview to ensure it doesn't clip any cutouts.
+        int topMargin = (int) getResources().getDimension(R.dimen.preview_margin_top_min);
+        switch (mCurrRotation) {
+            case Surface.ROTATION_90:
+                mRootView.setRotation(-90);
+                topMargin = Math.max(topMargin, displayCutout.getSafeInsetLeft());
+                break;
+            case Surface.ROTATION_270:
+                mRootView.setRotation(90);
+                topMargin = Math.max(topMargin, displayCutout.getSafeInsetRight());
+                break;
+            case Surface.ROTATION_0:
+                mRootView.setRotation(0);
+                topMargin = Math.max(topMargin, displayCutout.getSafeInsetTop());
+                break;
+            case Surface.ROTATION_180:
+                mRootView.setRotation(180);
+                topMargin = Math.max(topMargin, displayCutout.getSafeInsetBottom());
+                break;
+        }
+
+        ViewGroup.MarginLayoutParams layoutParams =
+                (ViewGroup.MarginLayoutParams) mTextureViewContainer.getLayoutParams();
+        layoutParams.topMargin = topMargin;
+        mTextureViewContainer.setLayoutParams(layoutParams);
+
+        // subscribe to layout changes of the texture view container so we can
+        // resize the texture view once the container has been drawn with the new
+        // margins
+        mTextureViewContainer.addOnLayoutChangeListener(mTextureViewContainerLayoutListener);
+    }
+
+
     @SuppressLint("ClickableViewAccessibility")
     private void setupZoomUiControl() {
         if (mLocalFgService == null || mLocalFgService.getCameraInfo() == null) {
@@ -349,23 +448,82 @@ public class DeviceAsWebcamPreview extends Activity {
             return;
         }
         setToggleCameraContentDescription();
-        mSelectorListItemDataList = createSelectorItemDataList();
-
-        mSwitchCameraSelectorView.init(getLayoutInflater(), mSelectorListItemDataList);
-        mSwitchCameraSelectorView.setRotation(mLocalFgService.getCurrentRotation());
-        mSwitchCameraSelectorView.setOnCameraSelectedListener(cameraId -> switchCamera(cameraId));
-        mSwitchCameraSelectorView.updateSelectedItem(
+        mCameraPickerDialog.updateAvailableCameras(createCameraListForPicker(),
                 mLocalFgService.getCameraInfo().getCameraId());
 
-        // Dynamically enable/disable the toggle button and zoom controller so that the behaviors
-        // under accessibility mode will be correct.
-        mSwitchCameraSelectorView.setOnVisibilityChangedListener(visibility -> {
-            mToggleCameraButton.setEnabled(visibility != View.VISIBLE);
-            mZoomController.setEnabled(visibility != View.VISIBLE);
+        updateHighQualityButtonState(mLocalFgService.isHighQualityModeEnabled());
+        mHighQualityToggleButton.setOnClickListener(v -> {
+            // Disable the toggle button to prevent spamming
+            mHighQualityToggleButton.setEnabled(false);
+            toggleHQWithWarningIfNeeded();
         });
     }
 
+    private void toggleHQWithWarningIfNeeded() {
+        boolean targetHqMode = !mLocalFgService.isHighQualityModeEnabled();
+        boolean warningEnabled = mUserPrefs.fetchHighQualityWarningEnabled(
+                /*defaultValue=*/ true);
+
+        // No need to show the dialog if HQ mode is being turned off, or if the user has
+        // explicitly clicked "Don't show again" before.
+        if (!targetHqMode || !warningEnabled) {
+            setHighQualityMode(targetHqMode);
+            return;
+        }
+
+        AlertDialog alertDialog = new AlertDialog.Builder(/*context=*/ this)
+                .setCancelable(false)
+                .create();
+
+        View customView = alertDialog.getLayoutInflater().inflate(
+                R.layout.hq_dialog_warning, /*root=*/ null);
+        alertDialog.setView(customView);
+        CheckBox dontShow = customView.findViewById(R.id.hq_warning_dont_show_again_checkbox);
+        dontShow.setOnCheckedChangeListener(
+                (buttonView, isChecked) -> mUserPrefs.storeHighQualityWarningEnabled(!isChecked));
+
+        Button ackButton = customView.findViewById(R.id.hq_warning_ack_button);
+        ackButton.setOnClickListener(v -> {
+            setHighQualityMode(true);
+            alertDialog.dismiss();
+        });
+
+        alertDialog.show();
+    }
+
+    private void setHighQualityMode(boolean enabled) {
+        Runnable callback = () -> {
+            // Immediately delegate callback to UI thread to prevent blocking the thread that
+            // callback was called from.
+            runOnUiThread(() -> {
+                setupSwitchCameraSelector();
+                setupZoomUiControl();
+                rotateUiByRotationDegrees(mLocalFgService.getCurrentRotation(),
+                        /*animationDuration*/ 0L);
+                mHighQualityToggleButton.setEnabled(true);
+            });
+        };
+        mLocalFgService.setHighQualityModeEnabled(enabled, callback);
+    }
+
+    private void updateHighQualityButtonState(boolean highQualityModeEnabled) {
+        int img = highQualityModeEnabled ?
+                R.drawable.ic_high_quality_on : R.drawable.ic_high_quality_off;
+        mHighQualityToggleButton.setImageResource(img);
+
+        // NOTE: This is "flipped" because if High Quality mode is enabled, we want the content
+        // description to say that it will be disabled when the button is pressed.
+        int contentDesc = highQualityModeEnabled ?
+                R.string.toggle_high_quality_description_off :
+                R.string.toggle_high_quality_description_on;
+        mHighQualityToggleButton.setContentDescription(getText(contentDesc));
+    }
+
     private void rotateUiByRotationDegrees(int rotation) {
+        rotateUiByRotationDegrees(rotation, /*animate*/ ROTATION_ANIMATION_DURATION_MS);
+    }
+
+    private void rotateUiByRotationDegrees(int rotation, long animationDuration) {
         if (mLocalFgService == null) {
             // Don't do anything if no foreground service is connected
             return;
@@ -374,14 +532,15 @@ public class DeviceAsWebcamPreview extends Activity {
         runOnUiThread(() -> {
             ObjectAnimator anim = ObjectAnimator.ofFloat(mToggleCameraButton,
                             /*propertyName=*/"rotation", finalRotation)
-                    .setDuration(ROTATION_ANIMATION_DURATION_MS);
+                    .setDuration(animationDuration);
             anim.setInterpolator(new AccelerateDecelerateInterpolator());
             anim.start();
             mToggleCameraButton.performHapticFeedback(
                     HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE);
 
-            mZoomController.setTextDisplayRotation(finalRotation, ROTATION_ANIMATION_DURATION_MS);
-            mSwitchCameraSelectorView.setRotation(finalRotation);
+            mZoomController.setTextDisplayRotation(finalRotation, (int) animationDuration);
+            mHighQualityToggleButton.animate()
+                    .rotation(finalRotation).setDuration(animationDuration);
         });
     }
 
@@ -427,6 +586,7 @@ public class DeviceAsWebcamPreview extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.preview_layout);
+        mRootView = findViewById(R.id.container_view);
         mTextureViewContainer = findViewById(R.id.texture_view_container);
         mTextureViewCard = findViewById(R.id.texture_view_card);
         mTextureView = findViewById(R.id.texture_view);
@@ -434,7 +594,13 @@ public class DeviceAsWebcamPreview extends Activity {
         mFocusIndicator.setBackground(createFocusIndicatorDrawable());
         mToggleCameraButton = findViewById(R.id.toggle_camera_button);
         mZoomController = findViewById(R.id.zoom_ui_controller);
-        mSwitchCameraSelectorView = findViewById(R.id.switch_camera_selector_view);
+        mHighQualityToggleButton = findViewById(R.id.high_quality_button);
+
+        // Use "seamless" animation for rotations as we fix the UI relative to the device.
+        // "seamless" will make the transition invisible to the users.
+        WindowManager.LayoutParams windowAttrs = getWindow().getAttributes();
+        windowAttrs.rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_SEAMLESS;
+        getWindow().setAttributes(windowAttrs);
 
         mAccessibilityManager = getSystemService(AccessibilityManager.class);
         if (mAccessibilityManager != null) {
@@ -442,29 +608,21 @@ public class DeviceAsWebcamPreview extends Activity {
                     mAccessibilityListener);
         }
 
-        // Update view to allow for status bar. This let's us keep a consistent background color
-        // behind the statusbar.
-        mTextureViewContainer.setOnApplyWindowInsetsListener((view, inset) -> {
-            Insets cutoutInset = inset.getInsets(WindowInsets.Type.displayCutout());
-            int minMargin = (int) getResources().getDimension(R.dimen.preview_margin_top_min);
+        mUserPrefs = new UserPrefs(this.getApplicationContext());
+        mCameraPickerDialog = new CameraPickerDialog(this::switchCamera);
 
-            ViewGroup.MarginLayoutParams layoutParams =
-                    (ViewGroup.MarginLayoutParams) mTextureViewContainer.getLayoutParams();
-            // Set the top margin to accommodate the cutout. However, if the cutout is
-            // very small, add a small margin to prevent the preview from going too close to
-            // the edge of the device.
-            int newMargin = Math.max(minMargin, cutoutInset.top);
-            if (newMargin != layoutParams.topMargin) {
-                layoutParams.topMargin = Math.max(minMargin, cutoutInset.top);
-                mTextureViewContainer.setLayoutParams(layoutParams);
-                // subscribe to layout changes of the texture view container so we can
-                // resize the texture view once the container has been drawn with the new
-                // margins
-                mTextureViewContainer
-                        .addOnLayoutChangeListener(mTextureViewContainerLayoutListener);
-            }
+        setupMainLayout();
+
+        // Needed because onConfigChanged is not called when device rotates from landscape to
+        // reverse-landscape or from portrait to reverse-portrait.
+        mRootView.setOnApplyWindowInsetsListener((view, inset) -> {
+            runOnUiThread(this::setupMainLayout);
             return WindowInsets.CONSUMED;
         });
+
+        if (!Flags.highQualityToggle()) {
+            mHighQualityToggleButton.setVisibility(View.GONE);
+        }
 
         bindService(new Intent(this, DeviceAsWebcamFgService.class), 0, mThreadExecutor,
                 mConnection);
@@ -507,8 +665,6 @@ public class DeviceAsWebcamPreview extends Activity {
             controller.setSystemBarsBehavior(
                     WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
-        // Hides the action bar
-        getActionBar().hide();
     }
 
     @Override
@@ -547,6 +703,7 @@ public class DeviceAsWebcamPreview extends Activity {
         }
         super.onPause();
     }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (mLocalFgService == null || (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN
@@ -639,8 +796,7 @@ public class DeviceAsWebcamPreview extends Activity {
         setupZoomRatioSeekBar();
         mZoomController.setZoomRatio(mLocalFgService.getZoomRatio(),
                 ZoomController.ZOOM_UI_TOGGLE_MODE);
-        mSwitchCameraSelectorView.updateSelectedItem(
-                mLocalFgService.getCameraInfo().getCameraId());
+        mCameraPickerDialog.updateSelectedCamera(mLocalFgService.getCameraInfo().getCameraId());
     }
 
     private void switchCamera(CameraId cameraId) {
@@ -655,6 +811,9 @@ public class DeviceAsWebcamPreview extends Activity {
         setupZoomRatioSeekBar();
         mZoomController.setZoomRatio(mLocalFgService.getZoomRatio(),
                 ZoomController.ZOOM_UI_TOGGLE_MODE);
+        // CameraPickerDialog does not update its UI until the preview activity
+        // notifies it of the change. So notify CameraPickerDialog about the camera change.
+        mCameraPickerDialog.updateSelectedCamera(cameraId);
     }
 
     private boolean tapToFocus(MotionEvent motionEvent) {
@@ -722,38 +881,17 @@ public class DeviceAsWebcamPreview extends Activity {
         mFocusIndicator.setVisibility(View.VISIBLE);
     }
 
-    private List<SelectorListItemData> createSelectorItemDataList() {
-        List<SelectorListItemData> selectorItemDataList = new ArrayList<>();
-        addSelectorItemDataByLensFacing(selectorItemDataList,
-                CameraCharacteristics.LENS_FACING_BACK);
-        addSelectorItemDataByLensFacing(selectorItemDataList,
-                CameraCharacteristics.LENS_FACING_FRONT);
-
-        return selectorItemDataList;
-    }
-
-    private void addSelectorItemDataByLensFacing(List<SelectorListItemData> selectorItemDataList,
-            int targetLensFacing) {
-        if (mLocalFgService == null) {
-            return;
+    private List<CameraPickerDialog.ListItem> createCameraListForPicker() {
+        List<CameraId> availableCameraIds = mLocalFgService.getAvailableCameraIds();
+        if (availableCameraIds == null) {
+            Log.w(TAG, "No cameras listed for picker. Why is Webcam Service running?");
+            return List.of();
         }
 
-        boolean lensFacingHeaderAdded = false;
-
-        for (CameraId cameraId : mLocalFgService.getAvailableCameraIds()) {
-            CameraInfo cameraInfo = mLocalFgService.getOrCreateCameraInfo(cameraId);
-
-            if (cameraInfo.getLensFacing() == targetLensFacing) {
-                if (!lensFacingHeaderAdded) {
-                    selectorItemDataList.add(
-                            SelectorListItemData.createHeaderItemData(targetLensFacing));
-                    lensFacingHeaderAdded = true;
-                }
-
-                selectorItemDataList.add(SelectorListItemData.createCameraItemData(
-                        cameraInfo));
-            }
-
-        }
+        return availableCameraIds.stream()
+                .map(mLocalFgService::getOrCreateCameraInfo)
+                .filter(Objects::nonNull)
+                .map(CameraPickerDialog.ListItem::new)
+                .toList();
     }
 }

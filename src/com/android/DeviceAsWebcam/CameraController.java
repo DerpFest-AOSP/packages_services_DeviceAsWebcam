@@ -55,6 +55,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.DeviceAsWebcam.utils.UserPrefs;
+import com.android.deviceaswebcam.flags.Flags;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -111,6 +112,9 @@ public class CameraController {
     private CameraId mBackCameraId = null;
     @Nullable
     private CameraId mFrontCameraId = null;
+
+    // Tracks if Webcam should drop performance optimizations to get the best quality.
+    private boolean mHighQualityModeEnabled = false;
 
     private ImageReader mImgReader;
     private Object mImgReaderLock = new Object();
@@ -358,9 +362,10 @@ public class CameraController {
         mDisplaySize = getDisplayPreviewSize();
         mCameraManager.registerAvailabilityCallback(
                 mCameraCallbacksExecutor, mCameraAvailabilityCallbacks);
-        mRroCameraInfo = VendorCameraPrefs.getVendorCameraPrefsFromJson(mContext);
         mUserPrefs = new UserPrefs(mContext);
-
+        mHighQualityModeEnabled = Flags.highQualityToggle() &&
+                mUserPrefs.fetchHighQualityModeEnabled(/*defaultValue*/ false);
+        mRroCameraInfo = createVendorCameraPrefs(mHighQualityModeEnabled);
         refreshAvailableCameraIdList();
         refreshLensFacingCameraIds();
 
@@ -467,6 +472,7 @@ public class CameraController {
     }
 
     private void refreshAvailableCameraIdList() {
+        mAvailableCameraIds.clear();
         String[] cameraIdList;
         try {
             cameraIdList = mCameraManager.getCameraIdList();
@@ -672,7 +678,7 @@ public class CameraController {
                     " height " + height + " fps " + fps);
         }
         synchronized (mSerializationLock) {
-            long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN;
+            long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_VIDEO_ENCODE;
             mStreamConfigs = new StreamConfigs(mjpeg, width, height, fps);
             synchronized (mImgReaderLock) {
                 if (mImgReader != null) {
@@ -919,6 +925,10 @@ public class CameraController {
 
     // Check whether we satisfy mandatory stream combinations for stream use use case
     private boolean shouldUseStreamUseCase() {
+        if (mHighQualityModeEnabled) {
+            // Do not use streamusecase if high quality mode is enabled.
+            return false;
+        }
         // Webcam stream - YUV should be <= 1440p
         // Preview stream should be <= PREVIEW - which is already guaranteed by
         // getSuitablePreviewSize()
@@ -1305,6 +1315,13 @@ public class CameraController {
     }
 
     /**
+     * Returns true if High Quality Mode is enabled, false otherwise.
+     */
+    public boolean isHighQualityModeEnabled() {
+        return mHighQualityModeEnabled;
+    }
+
+    /**
      * Toggles camera between the back and front cameras.
      *
      * The new camera is set up and configured asynchronously, but the camera state (as queried by
@@ -1517,6 +1534,46 @@ public class CameraController {
     }
 
     /**
+     * Enables or disables HighQuality mode. This will likely perform slow operations to commit the
+     * changes. {@code callback} will be called once the changes have been committed.
+     *
+     * Note that there is no guarantee that {@code callback} will be called on the UI thread
+     * and {@code callback} should not block the calling thread.
+     *
+     * @param enabled true if HighQualityMode should be enabled, false otherwise
+     * @param callback Callback to be called once the session has been reconfigured.
+     */
+    public void setHighQualityModeEnabled(boolean enabled, Runnable callback) {
+        synchronized (mSerializationLock) {
+            if (enabled == mHighQualityModeEnabled) {
+                callback.run();
+                return;
+            }
+
+            mHighQualityModeEnabled = enabled;
+            mUserPrefs.storeHighQualityModeEnabled(mHighQualityModeEnabled);
+        }
+        mServiceEventsExecutor.execute(() -> {
+            synchronized (mSerializationLock) {
+                int currentCameraFacing = getCameraInfo().getLensFacing();
+                mRroCameraInfo = createVendorCameraPrefs(mHighQualityModeEnabled);
+                refreshAvailableCameraIdList();
+                refreshLensFacingCameraIds();
+
+                // Choose a camera that faces the same way as the current camera.
+                CameraId targetCameraId = mBackCameraId;
+                if (currentCameraFacing == CameraCharacteristics.LENS_FACING_FRONT) {
+                    targetCameraId = mFrontCameraId;
+                }
+
+                switchCamera(targetCameraId);
+                // Let the caller know that the changes have been committed.
+                callback.run();
+            }
+        });
+    }
+
+    /**
      * Resets to the auto-focus mode.
      */
     public void resetToAutoFocus() {
@@ -1627,6 +1684,12 @@ public class CameraController {
             image = i;
             buffer = b;
         }
+    }
+
+    private VendorCameraPrefs createVendorCameraPrefs(boolean highQualityMode) {
+        return highQualityMode ?
+                VendorCameraPrefs.createEmptyVendorCameraPrefs(mContext) :
+                VendorCameraPrefs.getVendorCameraPrefsFromJson(mContext);
     }
 
     /**
