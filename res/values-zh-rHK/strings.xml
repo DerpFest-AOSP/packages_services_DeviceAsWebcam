@@ -29,8 +29,8 @@
     <string name="notif_ticker" msgid="6895154246348754766">"網絡攝影機"</string>
     <string name="notif_title" msgid="3788815976102922209">"網絡攝影機"</string>
     <string name="notif_desc" msgid="1433178383086179212">"輕按即可預覽和設定網絡攝影機輸出"</string>
-    <string name="hq_warning_dialog_title" msgid="5693009152902735897">"高品質模式"</string>
-    <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"「高品質模式」會停用電量優化功能，以提升網絡攝影機品質。使用此模式可能會大幅耗用電量，令裝置溫度上升。"</string>
+    <string name="hq_warning_dialog_title" msgid="5693009152902735897">"高畫質模式"</string>
+    <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"「高畫質模式」會停用電量優化功能，以提升網絡攝影機畫質。使用此模式可能會大幅耗用電量，令裝置溫度上升。"</string>
     <string name="hq_warning_dialog_content_2" msgid="877003832685705287"><b><u>"警告："</u></b>"在裝置溫度高時長時間使用，可能會對此裝置長遠的電池效能造成負面影響。"</string>
     <string name="hq_warning_dialog_dont_show_again" msgid="4409604672514060572">"不要再顯示"</string>
     <string name="hq_warning_dialog_button_ack" msgid="279514965669603856">"確認"</string>
