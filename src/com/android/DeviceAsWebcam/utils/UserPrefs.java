@@ -106,4 +106,33 @@ public class UserPrefs {
         mPrefsEditor.putString(mContext.getString(R.string.prefs_front_camera_id_key), cameraId);
         mPrefsEditor.apply();
     }
+
+    /**
+     * Read and return the stored HighQualityMode preference, or return {@code defaultValue} if
+     * not set.
+     */
+    public synchronized boolean fetchHighQualityModeEnabled(boolean defaultValue) {
+        return mPrefs.getBoolean(mContext.getString(R.string.prefs_high_quality_mode_enabled),
+                defaultValue);
+    }
+
+    /**
+     * Write preferred HighQualityMode to SharedPrefs.
+     */
+    public synchronized void storeHighQualityModeEnabled(boolean enabled) {
+        mPrefsEditor.putBoolean(mContext.getString(R.string.prefs_high_quality_mode_enabled),
+                enabled);
+        mPrefsEditor.apply();
+    }
+
+    public synchronized boolean fetchHighQualityWarningEnabled(boolean defaultValue) {
+        return mPrefs.getBoolean(mContext.getString(R.string.prefs_high_quality_warning_enabled),
+                defaultValue);
+    }
+
+    public synchronized void storeHighQualityWarningEnabled(boolean value) {
+        mPrefsEditor.putBoolean(mContext.getString(R.string.prefs_high_quality_warning_enabled),
+                value);
+        mPrefsEditor.apply();
+    }
 }

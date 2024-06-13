@@ -20,6 +20,7 @@
     android:id="@+id/container_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_gravity="center"
     android:background="@color/bg"
     tools:context=".DeviceAsWebcamPreview">
 
@@ -52,6 +53,18 @@
                 android:layout_height="@dimen/focus_indicator_size"
                 android:contentDescription="@null"
                 android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/high_quality_button"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top|left"
+                android:layout_marginTop="20dp"
+                android:layout_marginLeft="20dp"
+                android:background="@drawable/ic_high_quality_bg"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_high_quality_on" />
         </androidx.cardview.widget.CardView>
     </FrameLayout>
 
@@ -68,41 +81,29 @@
             android:id="@+id/toggle_camera_button"
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:layout_margin="64dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
             android:src="@drawable/ic_switch"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
             android:visibility="visible"
-            android:background="@drawable/ic_camera_switch_bg"/>
+            android:background="@drawable/ic_camera_switch_bg"
+            app:layout_constraintStart_toEndOf="@id/zoom_ui_controller"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintHorizontal_chainStyle="packed" />
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/zoom_ui_container"
+        <com.android.DeviceAsWebcam.view.ZoomController
+            android:id="@+id/zoom_ui_controller"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/toggle_camera_button">
-            <com.android.DeviceAsWebcam.view.ZoomController
-                android:id="@+id/zoom_ui_controller"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintWidth_max="@dimen/zoom_seekbar_width"/>
-        </androidx.constraintlayout.widget.ConstraintLayout>
+            app:layout_constraintEnd_toStartOf="@id/toggle_camera_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintWidth_max="@dimen/zoom_seekbar_width"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintHorizontal_chainStyle="packed"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <com.android.DeviceAsWebcam.view.SwitchCameraSelectorView
-        android:id="@+id/switch_camera_selector_view"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

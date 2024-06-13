@@ -348,6 +348,33 @@ public class DeviceAsWebcamFgService extends Service {
         }
     }
 
+    /**
+     * Returns true if high quality mode is enabled, false otherwise
+     */
+    public boolean isHighQualityModeEnabled() {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "isHighQualityModeEnabled was called after Service was destroyed");
+                return false;
+            }
+            return mCameraController.isHighQualityModeEnabled();
+        }
+    }
+
+    /**
+     * Enables/Disables high quality mode. See {@link CameraController#setHighQualityModeEnabled}
+     * for more info.
+     */
+    public void setHighQualityModeEnabled(boolean enabled, Runnable callback) {
+        synchronized (mServiceLock) {
+            if (!mServiceRunning) {
+                Log.e(TAG, "switchHighQualityMode was called after Service was destroyed");
+                return;
+            }
+            mCameraController.setHighQualityModeEnabled(enabled, callback);
+        }
+    }
+
     private void updateNotification(boolean isStreaming) {
         int transitionIcon; // animated icon
         int finalIcon; // static icon
