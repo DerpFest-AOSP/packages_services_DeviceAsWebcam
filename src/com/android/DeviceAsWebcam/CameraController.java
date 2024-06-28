@@ -54,6 +54,7 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.DeviceAsWebcam.R;
 import com.android.DeviceAsWebcam.utils.UserPrefs;
 import com.android.deviceaswebcam.flags.Flags;
 
@@ -678,7 +679,7 @@ public class CameraController {
                     " height " + height + " fps " + fps);
         }
         synchronized (mSerializationLock) {
-            long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_VIDEO_ENCODE;
+            long usage = (mContext.getResources().getBoolean(R.bool.config_HardwareVideoEncode) ? HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_VIDEO_ENCODE : HardwareBuffer.USAGE_CPU_READ_OFTEN);
             mStreamConfigs = new StreamConfigs(mjpeg, width, height, fps);
             synchronized (mImgReaderLock) {
                 if (mImgReader != null) {
