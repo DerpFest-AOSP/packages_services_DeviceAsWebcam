@@ -28,7 +28,7 @@
     <string name="notif_channel_name" msgid="9012392302161214874">"سرویس پیش‌نما"</string>
     <string name="notif_ticker" msgid="6895154246348754766">"وب‌بین"</string>
     <string name="notif_title" msgid="3788815976102922209">"وب‌بین"</string>
-    <string name="notif_desc" msgid="1433178383086179212">"برای پیش‌دید کردن و پیکربندی خروجی وب‌بین، ضربه بزنید"</string>
+    <string name="notif_desc" msgid="1433178383086179212">"برای پیش‌دید کردن و پیکربندی خروجی وب‌بین، تک‌ضرب بزنید"</string>
     <string name="hq_warning_dialog_title" msgid="5693009152902735897">"حالت کیفیت بالا"</string>
     <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"«حالت کیفیت بالا» بهینه‌سازی نیرو را برای بهبود کیفیت وب‌بین غیرفعال می‌کند. استفاده از این حالت ممکن است باعث افزایش قابل‌توجه مصرف باتری شود که می‌تواند منجر به گرم شدن دستگاه شود."</string>
     <string name="hq_warning_dialog_content_2" msgid="877003832685705287"><b><u>"هشدار:"</u></b>" استفاده طولانی‌مدت در دماهای بالا ممکن است تأثیر نامطلوب بر سلامت باتری این دستگاه داشته باشد."</string>
