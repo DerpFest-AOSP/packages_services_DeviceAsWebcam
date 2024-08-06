@@ -46,7 +46,7 @@
     <string name="list_item_text_standard_camera" msgid="4160445744347809472">"Стандартная камера"</string>
     <string name="list_item_text_wide_angle_camera" msgid="818505418693187683">"Камера з шырокавугольным аб\'ектывам"</string>
     <string name="list_item_text_ultra_wide_camera" msgid="7938127230852040392">"Камера са звышшырокавугольным аб\'ектывам"</string>
-    <string name="list_item_text_telephoto_camera" msgid="9192886831007902304">"Камера з тэлеаб\'ектывам"</string>
+    <string name="list_item_text_telephoto_camera" msgid="9192886831007902304">"Камера з тэлеаб’ектывам"</string>
     <string name="list_item_text_other_camera" msgid="3479174298899742270">"Іншая камера"</string>
     <string name="list_item_text_unknown_camera" msgid="5281152990521232984">"Невядомая камера"</string>
     <string name="camera_options_list_description" msgid="7808155848873436115">"Даступныя варыянты камеры"</string>
