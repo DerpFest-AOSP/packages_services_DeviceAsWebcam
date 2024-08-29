@@ -15,36 +15,6 @@ java_aconfig_library {
     aconfig_declarations: "device_as_webcam_flags",
 }
 
-android_app {
-    name: "DeviceAsWebcam",
-
-    static_libs: [
-        "androidx-constraintlayout_constraintlayout",
-        "androidx.appcompat_appcompat",
-        "androidx.cardview_cardview",
-        "androidx.recyclerview_recyclerview",
-        "androidx.window_window",
-        "device_as_webcam_flags_java_lib",
-    ],
-
-    srcs: [
-        "src/**/*.java",
-        "src/**/*.kt",
-    ],
-    platform_apis: true,
-    certificate: "platform",
-    privileged: true,
-    optimize: {
-        proguard_flags_files: ["proguard.flags"],
-    },
-    jni_libs: [
-        "libjni_deviceAsWebcam",
-    ],
-    resource_dirs: [
-        "res",
-    ],
-}
-
 genrule {
     name: "camera-webcam-test",
     srcs: [
