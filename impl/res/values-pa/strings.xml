@@ -16,38 +16,38 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_label" msgid="5899561994441982117">"ਵੈੱਬਕੈਮ ਸੇਵਾ"</string>
-    <string name="view_finder_description" msgid="5377029921915271921">"ਵਿਊ ਫਾਈਂਡਰ"</string>
-    <string name="zoom_ratio_description" msgid="6492691624405841938">"ਜ਼ੂਮ ਅਨੁਪਾਤ"</string>
-    <string name="zoom_ratio_button_current_description" msgid="4888275213379106225">"ਮੌਜੂਦਾ ਜ਼ੂਮ ਅਨੁਪਾਤ"</string>
-    <string name="zoom_seek_bar_description" msgid="2820202610575014723">"ਜ਼ੂਮ ਸੀਕ ਪੱਟੀ"</string>
-    <string name="toggle_camera_button_description_back" msgid="771773649789638243">"ਪਿਛਲੇ ਕੈਮਰੇ \'ਤੇ ਸਵਿੱਚ ਕਰੋ"</string>
-    <string name="toggle_camera_button_description_front" msgid="5248457301141397342">"ਅਗਲੇ ਕੈਮਰੇ \'ਤੇ ਸਵਿੱਚ ਕਰੋ"</string>
-    <string name="toggle_high_quality_description_off" msgid="2185762274050207314">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਬਟਨ ਨੂੰ ਬੰਦ ਕਰੋ"</string>
-    <string name="toggle_high_quality_description_on" msgid="9118596060527830719">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਬਟਨ ਨੂੰ ਚਾਲੂ ਕਰੋ"</string>
-    <string name="notif_channel_name" msgid="9012392302161214874">"ਫੋਰਗ੍ਰਾਊਂਡ ਸੇਵਾ"</string>
-    <string name="notif_ticker" msgid="6895154246348754766">"ਵੈੱਬਕੈਮ"</string>
-    <string name="notif_title" msgid="3788815976102922209">"ਵੈੱਬਕੈਮ"</string>
-    <string name="notif_desc" msgid="1433178383086179212">"ਵੈੱਬਕੈਮ ਆਊਟਪੁੱਟ ਦੀ ਪੂਰਵ-ਝਲਕ ਦੇਖ ਕੇ ਉਸਦਾ ਸੰਰੂਪਣ ਕਰਨ ਲਈ ਟੈਪ ਕਰੋ"</string>
-    <string name="hq_warning_dialog_title" msgid="5693009152902735897">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਮੋਡ"</string>
-    <string name="hq_warning_dialog_content_1" msgid="4007864550827450633">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਮੋਡ ਵੈੱਬਕੈਮ ਦੀ ਕੁਆਲਿਟੀ ਨੂੰ ਬਿਹਤਰ ਬਣਾਉਣ ਲਈ ਪਾਵਰ ਸੁਯੋਗਕਰਨਾਂ ਨੂੰ ਬੰਦ ਕਰਦਾ ਹੈ। ਇਸ ਮੋਡ ਨੂੰ ਵਰਤਣ ਨਾਲ ਕਾਫ਼ੀ ਜ਼ਿਆਦਾ ਪਾਵਰ ਖਿੱਚੀ ਜਾ ਸਕਦੀ ਹੈ, ਜਿਸ ਨਾਲ ਡੀਵਾਈਸ ਗਰਮ ਹੋ ਸਕਦਾ ਹੈ।"</string>
-    <string name="hq_warning_dialog_content_2" msgid="877003832685705287"><b><u>"ਚਿਤਾਵਨੀ:"</u></b>" ਉੱਚ ਤਾਪਮਾਨਾਂ \'ਤੇ ਜ਼ਿਆਦਾ ਸਮੇਂ ਲਈ ਵਰਤੋਂ ਕਰਨਾ ਇਸ ਡੀਵਾਈਸ ਦੀ ਲੰਬੇ ਸਮੇਂ ਦੀ ਬੈਟਰੀ ਦੀ ਹਾਲਤ \'ਤੇ ਪ੍ਰਤੀਕੂਲ ਪ੍ਰਭਾਵ ਪਾ ਸਕਦੀ ਹੈ।"</string>
-    <string name="hq_warning_dialog_dont_show_again" msgid="4409604672514060572">"ਦੁਬਾਰਾ ਨਾ ਦਿਖਾਓ"</string>
-    <string name="hq_warning_dialog_button_ack" msgid="279514965669603856">"ਹਾਮੀ ਭਰੋ"</string>
-    <string name="prefs_file_name" msgid="2893149378177647769">"com.android.DeviceAsWebcam.user.prefs"</string>
-    <string name="prefs_camera_id_key" msgid="9184794262750967261">"camera.id"</string>
-    <string name="prefs_back_camera_id_key" msgid="8184326473010982113">"back.camera.id"</string>
-    <string name="prefs_front_camera_id_key" msgid="2749648930172179078">"front.camera.id"</string>
-    <string name="prefs_zoom_ratio_key" msgid="4040441072428561847">"zoom.ratio.%s"</string>
-    <string name="prefs_high_quality_mode_enabled" msgid="3746094349991090908">"high.quality.mode.enabled"</string>
-    <string name="prefs_high_quality_warning_enabled" msgid="696012337719400975">"high.quality.warning.enabled"</string>
-    <string name="list_item_text_back_camera" msgid="2734532140746580971">"ਪਿਛਲਾ ਕੈਮਰਾ"</string>
-    <string name="list_item_text_front_camera" msgid="7273773310502952694">"ਅਗਲਾ ਕੈਮਰਾ"</string>
-    <string name="list_item_text_standard_camera" msgid="4160445744347809472">"ਮਿਆਰੀ ਕੈਮਰਾ"</string>
-    <string name="list_item_text_wide_angle_camera" msgid="818505418693187683">"ਵਾਈਡ ਐਂਗਲ ਕੈਮਰਾ"</string>
-    <string name="list_item_text_ultra_wide_camera" msgid="7938127230852040392">"ਅਲਟ੍ਰਾ ਵਾਈਡ ਕੈਮਰਾ"</string>
-    <string name="list_item_text_telephoto_camera" msgid="9192886831007902304">"ਟੈਲੀਫ਼ੋਟੋ ਕੈਮਰਾ"</string>
-    <string name="list_item_text_other_camera" msgid="3479174298899742270">"ਹੋਰ ਕੈਮਰਾ"</string>
-    <string name="list_item_text_unknown_camera" msgid="5281152990521232984">"ਅਗਿਆਤ ਕੈਮਰਾ"</string>
-    <string name="camera_options_list_description" msgid="7808155848873436115">"ਕੈਮਰੇ ਦੇ ਉਪਲਬਧ ਵਿਕਲਪ"</string>
+    <string name="app_label" msgid="5357575528456632609">"ਵੈੱਬਕੈਮ ਸੇਵਾ"</string>
+    <string name="view_finder_description" msgid="3685544621391457707">"ਵਿਊ ਫਾਈਂਡਰ"</string>
+    <string name="zoom_ratio_description" msgid="7895509594054136545">"ਜ਼ੂਮ ਅਨੁਪਾਤ"</string>
+    <string name="zoom_ratio_button_current_description" msgid="426459536172417249">"ਮੌਜੂਦਾ ਜ਼ੂਮ ਅਨੁਪਾਤ"</string>
+    <string name="zoom_seek_bar_description" msgid="4729029535436993707">"ਜ਼ੂਮ ਸੀਕ ਪੱਟੀ"</string>
+    <string name="toggle_camera_button_description_back" msgid="6327233207744220545">"ਪਿਛਲੇ ਕੈਮਰੇ \'ਤੇ ਸਵਿੱਚ ਕਰੋ"</string>
+    <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"ਅਗਲੇ ਕੈਮਰੇ \'ਤੇ ਸਵਿੱਚ ਕਰੋ"</string>
+    <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਬਟਨ ਨੂੰ ਬੰਦ ਕਰੋ"</string>
+    <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਬਟਨ ਨੂੰ ਚਾਲੂ ਕਰੋ"</string>
+    <string name="notif_channel_name" msgid="1795387228422610848">"ਫੋਰਗ੍ਰਾਊਂਡ ਸੇਵਾ"</string>
+    <string name="notif_ticker" msgid="3511834104983019828">"ਵੈੱਬਕੈਮ"</string>
+    <string name="notif_title" msgid="4116154871333996356">"ਵੈੱਬਕੈਮ"</string>
+    <string name="notif_desc" msgid="8111583880090370338">"ਵੈੱਬਕੈਮ ਆਊਟਪੁੱਟ ਦੀ ਪੂਰਵ-ਝਲਕ ਦੇਖ ਕੇ ਉਸਦਾ ਸੰਰੂਪਣ ਕਰਨ ਲਈ ਟੈਪ ਕਰੋ"</string>
+    <string name="hq_warning_dialog_title" msgid="2219475457173758785">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਮੋਡ"</string>
+    <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"ਬਿਹਤਰੀਨ ਕੁਆਲਿਟੀ ਮੋਡ ਵੈੱਬਕੈਮ ਦੀ ਕੁਆਲਿਟੀ ਨੂੰ ਬਿਹਤਰ ਬਣਾਉਣ ਲਈ ਪਾਵਰ ਸੁਯੋਗਕਰਨਾਂ ਨੂੰ ਬੰਦ ਕਰਦਾ ਹੈ। ਇਸ ਮੋਡ ਨੂੰ ਵਰਤਣ ਨਾਲ ਕਾਫ਼ੀ ਜ਼ਿਆਦਾ ਪਾਵਰ ਖਿੱਚੀ ਜਾ ਸਕਦੀ ਹੈ, ਜਿਸ ਨਾਲ ਡੀਵਾਈਸ ਗਰਮ ਹੋ ਸਕਦਾ ਹੈ।"</string>
+    <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"ਚਿਤਾਵਨੀ:"</u></b>" ਉੱਚ ਤਾਪਮਾਨਾਂ \'ਤੇ ਜ਼ਿਆਦਾ ਸਮੇਂ ਲਈ ਵਰਤੋਂ ਕਰਨਾ ਇਸ ਡੀਵਾਈਸ ਦੀ ਲੰਬੇ ਸਮੇਂ ਦੀ ਬੈਟਰੀ ਦੀ ਹਾਲਤ \'ਤੇ ਪ੍ਰਤੀਕੂਲ ਪ੍ਰਭਾਵ ਪਾ ਸਕਦੀ ਹੈ।"</string>
+    <string name="hq_warning_dialog_dont_show_again" msgid="7673771228725839758">"ਦੁਬਾਰਾ ਨਾ ਦਿਖਾਓ"</string>
+    <string name="hq_warning_dialog_button_ack" msgid="613756451667553632">"ਹਾਮੀ ਭਰੋ"</string>
+    <string name="prefs_file_name" msgid="1594472134069722000">"com.android.DeviceAsWebcam.user.prefs"</string>
+    <string name="prefs_camera_id_key" msgid="5865987824227186440">"camera.id"</string>
+    <string name="prefs_back_camera_id_key" msgid="2529978796301129676">"back.camera.id"</string>
+    <string name="prefs_front_camera_id_key" msgid="5008356857509132687">"front.camera.id"</string>
+    <string name="prefs_zoom_ratio_key" msgid="5198404806322533867">"zoom.ratio.%s"</string>
+    <string name="prefs_high_quality_mode_enabled" msgid="6399835233745563577">"high.quality.mode.enabled"</string>
+    <string name="prefs_high_quality_warning_enabled" msgid="3869127585273122773">"high.quality.warning.enabled"</string>
+    <string name="list_item_text_back_camera" msgid="3350389854150173621">"ਪਿਛਲਾ ਕੈਮਰਾ"</string>
+    <string name="list_item_text_front_camera" msgid="3031661498601814899">"ਅਗਲਾ ਕੈਮਰਾ"</string>
+    <string name="list_item_text_standard_camera" msgid="2095831547376259596">"ਮਿਆਰੀ ਕੈਮਰਾ"</string>
+    <string name="list_item_text_wide_angle_camera" msgid="532663305355107401">"ਵਾਈਡ ਐਂਗਲ ਕੈਮਰਾ"</string>
+    <string name="list_item_text_ultra_wide_camera" msgid="5380279036978513342">"ਅਲਟ੍ਰਾ ਵਾਈਡ ਕੈਮਰਾ"</string>
+    <string name="list_item_text_telephoto_camera" msgid="3876282379838057057">"ਟੈਲੀਫ਼ੋਟੋ ਕੈਮਰਾ"</string>
+    <string name="list_item_text_other_camera" msgid="630573588657548196">"ਹੋਰ ਕੈਮਰਾ"</string>
+    <string name="list_item_text_unknown_camera" msgid="2974439335941064529">"ਅਗਿਆਤ ਕੈਮਰਾ"</string>
+    <string name="camera_options_list_description" msgid="8510354071701517452">"ਕੈਮਰੇ ਦੇ ਉਪਲਬਧ ਵਿਕਲਪ"</string>
 </resources>
