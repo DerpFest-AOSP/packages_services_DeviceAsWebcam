@@ -32,7 +32,7 @@
         </activity>
 
         <service
-            android:name=".DeviceAsWebcamFgService"
+            android:name=".DeviceAsWebcamFgServiceImpl"
             android:foregroundServiceType="camera"
             android:singleUser="true"/>
     </application>

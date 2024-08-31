@@ -241,8 +241,8 @@ public class DeviceAsWebcamPreview extends FragmentActivity {
             new ServiceConnection() {
                 @Override
                 public void onServiceConnected(ComponentName className, IBinder serviceBinder) {
-                    DeviceAsWebcamFgService service =
-                            ((DeviceAsWebcamFgService.LocalBinder) serviceBinder).getService();
+                    DeviceAsWebcamFgServiceImpl service =
+                            ((DeviceAsWebcamFgServiceImpl.LocalBinder) serviceBinder).getService();
                     if (VERBOSE) {
                         Log.v(TAG, "Got Fg service");
                     }
@@ -654,7 +654,10 @@ public class DeviceAsWebcamPreview extends FragmentActivity {
             mHighQualityToggleButton.setVisibility(View.GONE);
         }
 
-        bindService(new Intent(this, DeviceAsWebcamFgService.class), 0, mThreadExecutor,
+        bindService(
+                new Intent(this, DeviceAsWebcamFgServiceImpl.class),
+                0,
+                mThreadExecutor,
                 mConnection);
     }
 
@@ -753,8 +756,8 @@ public class DeviceAsWebcamPreview extends FragmentActivity {
 
         // Clamps the zoom ratio in the supported range
         Range<Float> zoomRatioRange = mWebcamController.getCameraInfo().getZoomRatioRange();
-        zoomRatio = Math.min(Math.max(zoomRatio, zoomRatioRange.getLower()),
-                zoomRatioRange.getUpper());
+        zoomRatio =
+                Math.min(Math.max(zoomRatio, zoomRatioRange.getLower()), zoomRatioRange.getUpper());
 
         // Updates the new value to all related controls
         mWebcamController.setZoomRatio(zoomRatio);
@@ -867,9 +870,7 @@ public class DeviceAsWebcamPreview extends FragmentActivity {
         return true;
     }
 
-    /**
-     * Returns whether the new points overlap with the original tap-to-focus points or not.
-     */
+    /** Returns whether the new points overlap with the original tap-to-focus points or not. */
     private boolean isTapToResetAutoFocus(float[] newNormalizedPoints) {
         float[] oldNormalizedPoints = mWebcamController.getTapToFocusPoints();
 

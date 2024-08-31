@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Միացնել դիմային տեսախցիկը"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Անջատել բարձր որակը"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Միացնել բարձր որակը"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Ակտիվ ծառայություն"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Վեբ տեսախցիկ"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Վեբ տեսախցիկ"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Հպեք՝ վեբ տեսախցիկի արտածումը դիտելու և կարգավորելու համար"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Բարձր որակի ռեժիմ"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Բարձր որակի ռեժիմն անջատում է էլեկտրասպառման օպտիմալացումը՝ վեբ տեսախցիկի որակը բարելավելու համար։ Այս ռեժիմի օգտագործումը կարող է հանգեցնել էլեկտրաէներգիայի զգալի սպառմանը, ինչի պատճառով սարքը կարող է տաքանալ։"</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"ՆԱԽԱԶԳՈՒՇԱՑՈՒՄ․"</u></b>" բարձր ջերմաստիճաններում երկարատև օգտագործումը կարող է ապագայում բացասական ազդեցություն ունենալ այս սարքի մարտկոցի վիճակի վրա։"</string>

@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Preklop na sprednji fotoaparat"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Izklop visoke kakovosti"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Vklop visoke kakovosti"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Storitev v ospredju"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Spletna kamera"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Spletna kamera"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Dotaknite se za predogled in konfiguriranje izhoda spletne kamere"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Način visoke kakovosti"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Način visoke kakovosti onemogoči optimizacije napajanja, da izboljša kakovost spletne kamere. Če uporabljate ta način, lahko naprava porablja veliko energije, kar lahko segreje napravo."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"OPOZORILO:"</u></b>" Dolgotrajna uporaba pri visokih temperaturah lahko negativno vpliva na dolgoročno stanje baterije v tej napravi."</string>

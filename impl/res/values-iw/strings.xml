@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"מעבר למצלמה הקדמית"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"השבתת האיכות הגבוהה"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"הפעלת האיכות הגבוהה"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"שירות שפועל בחזית"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"מצלמת אינטרנט"</string>
-    <string name="notif_title" msgid="4116154871333996356">"מצלמת אינטרנט"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"יש להקיש כדי לראות תצוגה מקדימה ולהגדיר את הפלט של מצלמת האינטרנט"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"מצב איכות גבוהה"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"\'מצב איכות גבוהה\' משבית את אופטימיזציית השימוש בחשמל כדי לשפר את איכות מצלמת האינטרנט. שימוש במצב הזה עלול לגרום לצריכת חשמל משמעותית שיכולה לחמם את המכשיר."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"אזהרה:"</u></b>" שימוש ממושך בטמפרטורות גבוהות עשוי להשפיע לרעה על תקינות הסוללה של המכשיר הזה בטווח הארוך."</string>

@@ -18,10 +18,17 @@ package com.android.DeviceAsWebcam;
 
 import android.hardware.HardwareBuffer;
 import android.media.Image;
+import android.util.Log;
 import android.util.Size;
+
+import java.lang.ref.WeakReference;
 
 /** Primary interface for calls between the host and webcam controls. */
 public abstract class WebcamController {
+    private static final String TAG = WebcamController.class.getSimpleName();
+
+    private WeakReference<DeviceAsWebcamFgService> mServiceRef = null;
+
     /**
      * Called when the host selects a stream configuration. This is considered inviolable, not
      * honoring the size and frame rate is an error.
@@ -55,10 +62,23 @@ public abstract class WebcamController {
      *     otherwise. {@link #onImageReturned} will only be called for the {@code image} if {@code
      *     true} is returned.
      */
-    public boolean queueImageToHost(HardwareBuffer image, long token, boolean rotate180Degrees) {
-        // TODO(arakesh): move implementation from WebcamControllerImpl here while
-        //                when splitting DeviceAsWebcamFgService
-        return false;
+    public final boolean queueImageToHost(
+            HardwareBuffer image, long token, boolean rotate180Degrees) {
+        DeviceAsWebcamFgService service = mServiceRef.get();
+        if (service == null) {
+            Log.e(TAG, "queueImageToHost called but service has already been garbage collected?");
+            return false;
+        }
+
+        return service.nativeEncodeImage(image, token, rotate180Degrees ? 180 : 0) == 0;
+    }
+
+    /**
+     * Internal method used by the {@link DeviceAsWebcamFgService} allow {@link #queueImageToHost}
+     * to call the native implementation.
+     */
+    final void registerServiceInstance(DeviceAsWebcamFgService service) {
+        mServiceRef = new WeakReference<>(service);
     }
 
     /**
