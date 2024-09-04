@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam;
+package com.android.deviceaswebcam;
 
 import static android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK;
 
@@ -69,10 +69,11 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.window.layout.WindowMetrics;
 import androidx.window.layout.WindowMetricsCalculator;
 
-import com.android.DeviceAsWebcam.utils.UserPrefs;
-import com.android.DeviceAsWebcam.view.CameraPickerDialog;
-import com.android.DeviceAsWebcam.view.ZoomController;
+import com.android.DeviceAsWebcam.R;
 import com.android.deviceaswebcam.flags.Flags;
+import com.android.deviceaswebcam.utils.UserPrefs;
+import com.android.deviceaswebcam.view.CameraPickerDialog;
+import com.android.deviceaswebcam.view.ZoomController;
 
 import java.util.List;
 import java.util.Objects;

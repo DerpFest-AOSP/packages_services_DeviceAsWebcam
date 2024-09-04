@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam.view;
+package com.android.deviceaswebcam.view;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;

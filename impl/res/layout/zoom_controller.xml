@@ -37,7 +37,7 @@
             android:thumb="@drawable/ic_zoom_ui_seekbar_thumb"
             android:visibility="gone" />
 
-        <com.android.DeviceAsWebcam.view.ZoomKnob
+        <com.android.deviceaswebcam.view.ZoomKnob
             android:id="@+id/zoom_ui_knob"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

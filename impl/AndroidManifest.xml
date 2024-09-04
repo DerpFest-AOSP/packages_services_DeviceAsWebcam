@@ -12,7 +12,7 @@
 
     <application
          android:label="@string/app_label">
-        <receiver android:name=".DeviceAsWebcamReceiverImpl"
+        <receiver android:name="com.android.deviceaswebcam.DeviceAsWebcamReceiverImpl"
              android:exported="true"
              android:singleUser="true">
             <intent-filter>
@@ -20,7 +20,7 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name=".DeviceAsWebcamPreview"
+        <activity android:name="com.android.deviceaswebcam.DeviceAsWebcamPreview"
             android:excludeFromRecents="true"
             android:screenOrientation="user"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|smallestScreenSize"
@@ -31,7 +31,7 @@
         </activity>
 
         <service
-            android:name=".DeviceAsWebcamFgServiceImpl"
+            android:name="com.android.deviceaswebcam.DeviceAsWebcamFgServiceImpl"
             android:foregroundServiceType="camera"
             android:singleUser="true"/>
     </application>

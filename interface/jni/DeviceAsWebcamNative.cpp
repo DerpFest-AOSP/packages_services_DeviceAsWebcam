@@ -70,7 +70,7 @@ const JNINativeMethod DeviceAsWebcamNative::sMethods[] = {
 };
 
 int DeviceAsWebcamNative::registerJNIMethods(JNIEnv* e, JavaVM* jvm) {
-    char clsName[] = "com/android/DeviceAsWebcam/DeviceAsWebcamFgService";
+    char clsName[] = "com/android/deviceaswebcam/DeviceAsWebcamFgService";
     int ret = jniRegisterNativeMethods(e, clsName, sMethods, NELEM(sMethods));
     if (ret) {
         return JNI_ERR;
