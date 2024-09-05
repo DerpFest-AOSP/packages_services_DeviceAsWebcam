@@ -24,14 +24,12 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
-import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 import android.util.Size;
 
-import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -39,9 +37,7 @@ import com.android.DeviceAsWebcam.annotations.UsedByNative;
 import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
 
 import java.lang.ref.WeakReference;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 public class DeviceAsWebcamFgService extends Service {
     private static final String TAG = "DeviceAsWebcamFgService";
@@ -57,8 +53,7 @@ public class DeviceAsWebcamFgService extends Service {
     private final Object mServiceLock = new Object();
     private final IBinder mBinder = new LocalBinder();
     private Context mContext;
-    private CameraController mCameraController;
-    private Runnable mDestroyActivityCallback = null;
+    private WebcamControllerImpl mWebcamController;
     private boolean mServiceRunning = false;
 
     private NotificationCompat.Builder mNotificationBuilder;
@@ -84,7 +79,8 @@ public class DeviceAsWebcamFgService extends Service {
             if (mContext == null) {
                 Log.e(TAG, "Application context is null!, something is going to go wrong");
             }
-            mCameraController = new CameraController(mContext, new WeakReference<>(this));
+            mWebcamController = new WebcamControllerImpl(mContext);
+            mWebcamController.registerServiceInstance(new WeakReference<>(this));
             int res = setupServicesAndStartListening();
             startForegroundWithNotification();
             // If `setupServiceAndStartListening` fails, we don't want to start the foreground
@@ -99,6 +95,10 @@ public class DeviceAsWebcamFgService extends Service {
             mServiceRunning = true;
             return START_NOT_STICKY;
         }
+    }
+
+    public WebcamControllerImpl getWebcamControllerImpl() {
+        return mWebcamController;
     }
 
     private String createNotificationChannel() {
@@ -143,8 +143,8 @@ public class DeviceAsWebcamFgService extends Service {
                 return;
             }
             mServiceRunning = false;
-            if (mDestroyActivityCallback != null) {
-                mDestroyActivityCallback.run();
+            if (mWebcamController != null) {
+                mWebcamController.onDestroy();
             }
             nativeOnDestroy();
             if (VERBOSE) {
@@ -154,225 +154,6 @@ public class DeviceAsWebcamFgService extends Service {
             NotificationManagerCompat.from(mContext).cancelAll();
         }
         super.onDestroy();
-    }
-
-    /**
-     * Returns the best suitable output size for preview.
-     *
-     * <p>If the webcam stream doesn't exist, find the largest 16:9 supported output size which is
-     * not larger than 1080p. If the webcam stream exists, find the largest supported output size
-     * which matches the aspect ratio of the webcam stream size and is not larger than the webcam
-     * stream size.
-     */
-    public Size getSuitablePreviewSize() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "getSuitablePreviewSize called after Service was destroyed.");
-                return null;
-            }
-            return mCameraController.getSuitablePreviewSize();
-        }
-    }
-
-    /**
-     * Method to set a preview surface texture that camera will stream to. Should be of the size
-     * returned by {@link #getSuitablePreviewSize}.
-     *
-     * @param surfaceTexture surfaceTexture to stream preview frames to
-     * @param previewSize the preview size
-     * @param previewSizeChangeListener a listener to monitor the preview size change events.
-     */
-    public void setPreviewSurfaceTexture(SurfaceTexture surfaceTexture, Size previewSize,
-            Consumer<Size> previewSizeChangeListener) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "setPreviewSurfaceTexture called after Service was destroyed.");
-                return;
-            }
-            mCameraController.startPreviewStreaming(surfaceTexture, previewSize,
-                    previewSizeChangeListener);
-        }
-    }
-
-    /**
-     * Method to remove any preview SurfaceTexture set by {@link #setPreviewSurfaceTexture}.
-     */
-    public void removePreviewSurfaceTexture() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "removePreviewSurfaceTexture was called after Service was destroyed.");
-                return;
-            }
-            mCameraController.stopPreviewStreaming();
-        }
-    }
-
-    /**
-     * Method to setOnDestroyedCallback. This callback will be called when immediately before the
-     * foreground service is destroyed. Intended to give and bound context a change to clean up
-     * before the Service is destroyed. {@code setOnDestroyedCallback(null)} must be called to unset
-     * the callback when a bound context finishes to prevent Context leak.
-     * <p>
-     * This callback must not call {@code setOnDestroyedCallback} from within the callback.
-     *
-     * @param callback callback to be called when the service is destroyed. {@code null} unsets
-     *                 the callback
-     */
-    public void setOnDestroyedCallback(@Nullable Runnable callback) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "setOnDestroyedCallback was called after Service was destroyed");
-                return;
-            }
-            mDestroyActivityCallback = callback;
-        }
-    }
-
-    /**
-     * Returns the {@link CameraInfo} of the working camera.
-     */
-    public CameraInfo getCameraInfo() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "getCameraInfo called after Service was destroyed.");
-                return null;
-            }
-            return mCameraController.getCameraInfo();
-        }
-    }
-
-    /**
-     * Returns the available {@link CameraId} list.
-     */
-    @Nullable
-    public List<CameraId> getAvailableCameraIds() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "getAvailableCameraIds called after Service was destroyed.");
-                return null;
-            }
-            return mCameraController.getAvailableCameraIds();
-        }
-    }
-
-    /**
-     * Returns the {@link CameraInfo} for the specified camera id.
-     */
-    @Nullable
-    public CameraInfo getOrCreateCameraInfo(CameraId cameraId) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "getCameraInfo called after Service was destroyed.");
-                return null;
-            }
-            return mCameraController.getOrCreateCameraInfo(cameraId);
-        }
-    }
-
-    /**
-     * Sets the new zoom ratio setting to the working camera.
-     */
-    public void setZoomRatio(float zoomRatio) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "setZoomRatio called after Service was destroyed.");
-                return;
-            }
-            mCameraController.setZoomRatio(zoomRatio);
-        }
-    }
-
-    /**
-     * Returns current zoom ratio setting.
-     */
-    public float getZoomRatio() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "getZoomRatio called after Service was destroyed.");
-                return 1.0f;
-            }
-            return mCameraController.getZoomRatio();
-        }
-    }
-
-    /**
-     * Toggles camera between the back and front cameras.
-     */
-    public void toggleCamera() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "toggleCamera called after Service was destroyed.");
-                return;
-            }
-            mCameraController.toggleCamera();
-        }
-    }
-
-    /**
-     * Switches current working camera to specific one.
-     */
-    public void switchCamera(CameraId cameraId) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "switchCamera called after Service was destroyed.");
-                return;
-            }
-            mCameraController.switchCamera(cameraId);
-        }
-    }
-
-    /**
-     * Sets a {@link CameraController.RotationUpdateListener} to monitor the device rotation
-     * changes.
-     */
-    public void setRotationUpdateListener(CameraController.RotationUpdateListener listener) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "setRotationUpdateListener called after Service was destroyed.");
-                return;
-            }
-            mCameraController.setRotationUpdateListener(listener);
-        }
-    }
-
-    /**
-     * Returns current rotation degrees value.
-     */
-    public int getCurrentRotation() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "getCurrentRotation was called after Service was destroyed");
-                return 0;
-            }
-            return mCameraController.getCurrentRotation();
-        }
-    }
-
-    /**
-     * Returns true if high quality mode is enabled, false otherwise
-     */
-    public boolean isHighQualityModeEnabled() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "isHighQualityModeEnabled was called after Service was destroyed");
-                return false;
-            }
-            return mCameraController.isHighQualityModeEnabled();
-        }
-    }
-
-    /**
-     * Enables/Disables high quality mode. See {@link CameraController#setHighQualityModeEnabled}
-     * for more info.
-     */
-    public void setHighQualityModeEnabled(boolean enabled, Runnable callback) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "switchHighQualityMode was called after Service was destroyed");
-                return;
-            }
-            mCameraController.setHighQualityModeEnabled(enabled, callback);
-        }
     }
 
     private void updateNotification(boolean isStreaming) {
@@ -449,7 +230,7 @@ public class DeviceAsWebcamFgService extends Service {
                 Log.e(TAG, "startStreaming was called after Service was destroyed");
                 return;
             }
-            mCameraController.startWebcamStreaming();
+            mWebcamController.startStream();
             updateNotification(/*isStreaming*/ true);
         }
     }
@@ -472,7 +253,7 @@ public class DeviceAsWebcamFgService extends Service {
                 Log.e(TAG, "stopStreaming was called after Service was destroyed");
                 return;
             }
-            mCameraController.stopWebcamStreaming();
+            mWebcamController.stopStream();
             updateNotification(/*isStreaming*/ false);
         }
     }
@@ -484,7 +265,7 @@ public class DeviceAsWebcamFgService extends Service {
                 Log.e(TAG, "returnImage was called after Service was destroyed");
                 return;
             }
-            mCameraController.returnImage(timestamp);
+            mWebcamController.onImageReturned(timestamp);
         }
     }
 
@@ -495,51 +276,7 @@ public class DeviceAsWebcamFgService extends Service {
                 Log.e(TAG, "setStreamConfig was called after Service was destroyed");
                 return;
             }
-            mCameraController.setWebcamStreamConfig(mjpeg, width, height, fps);
-        }
-    }
-
-    /**
-     * Trigger tap-to-focus operation for the specified normalized points mapping to the FOV.
-     *
-     * <p>The specified normalized points will be used to calculate the corresponding metering
-     * rectangles that will be applied for AF, AE and AWB.
-     */
-    public void tapToFocus(float[] normalizedPoint) {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "tapToFocus was called after Service was destroyed");
-                return;
-            }
-            mCameraController.tapToFocus(normalizedPoint);
-        }
-    }
-
-    /**
-     * Retrieves current tap-to-focus points.
-     *
-     * @return the normalized points or {@code null} if it is auto-focus mode currently.
-     */
-    public float[] getTapToFocusPoints() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "getTapToFocusPoints was called after Service was destroyed");
-                return null;
-            }
-            return mCameraController.getTapToFocusPoints();
-        }
-    }
-
-    /**
-     * Resets to the auto-focus mode.
-     */
-    public void resetToAutoFocus() {
-        synchronized (mServiceLock) {
-            if (!mServiceRunning) {
-                Log.e(TAG, "resetToAutoFocus was called after Service was destroyed");
-                return;
-            }
-            mCameraController.resetToAutoFocus();
+            mWebcamController.setStreamConfig(new Size(width, height), fps);
         }
     }
 
