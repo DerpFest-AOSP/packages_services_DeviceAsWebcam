@@ -57,7 +57,6 @@ import androidx.annotation.Nullable;
 import com.android.DeviceAsWebcam.utils.UserPrefs;
 import com.android.deviceaswebcam.flags.Flags;
 
-import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -129,7 +128,7 @@ public class CameraController {
     private ArrayMap<String, CameraAvailabilityState> mCameraAvailabilityState = new ArrayMap<>();
 
     private Context mContext;
-    private WeakReference<DeviceAsWebcamFgService> mServiceWeak;
+    private final WebcamControllerImpl mWebcamController;
     private CaptureRequest.Builder mPreviewRequestBuilder;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
@@ -170,18 +169,17 @@ public class CameraController {
     @Nullable
     private float[] mTapToFocusPoints = null;
     private static class StreamConfigs {
-        StreamConfigs(boolean mjpegP, int widthP, int heightP, int fpsP) {
-            isMjpeg = mjpegP;
-            width = widthP;
-            height = heightP;
-            fps = fpsP;
+        StreamConfigs(int width, int height, int fps) {
+            mWidth = width;
+            mHeight = height;
+            mFps = fps;
         }
 
-        boolean isMjpeg;
-        int width;
-        int height;
-        int fps;
-    };
+        final int mWidth;
+        final int mHeight;
+        final int mFps;
+    }
+
     private StreamConfigs mStreamConfigs;
     private CameraDevice.StateCallback mCameraStateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -296,13 +294,8 @@ public class CameraController {
                     Image image;
                     HardwareBuffer hardwareBuffer;
                     long ts;
-                    DeviceAsWebcamFgService service = mServiceWeak.get();
                     synchronized (mImgReaderLock) {
                         if (reader != mImgReader) {
-                            return;
-                        }
-                        if (service == null) {
-                            Log.e(TAG, "Service is dead, what ?");
                             return;
                         }
                         if (mImageMap.size() >= MAX_BUFFERS) {
@@ -316,8 +309,10 @@ public class CameraController {
                         // Acquire latest Image and get the HardwareBuffer
                         image = reader.acquireNextImage();
                         if (VERBOSE) {
-                            Log.v(TAG, "Got acquired Image in onImageAvailable callback for reader "
-                                    + reader);
+                            Log.v(
+                                    TAG,
+                                    "Got acquired Image in onImageAvailable callback for reader "
+                                            + reader);
                         }
                         if (image == null) {
                             if (VERBOSE) {
@@ -330,12 +325,13 @@ public class CameraController {
                     }
                     mImageMap.put(ts, new ImageAndBuffer(image, hardwareBuffer));
                     // Callback into DeviceAsWebcamFgService to encode image
-                    if ((!mStartCaptureWebcamStream.get()) || (service.nativeEncodeImage(
-                            hardwareBuffer, ts, getCurrentRotation()) != 0)) {
+                    if ((!mStartCaptureWebcamStream.get())
+                            || !mWebcamController.queueImageToHost(
+                                    hardwareBuffer, ts, getCurrentRotation() == 180)) {
                         if (VERBOSE) {
-                            Log.v(TAG,
-                                    "Couldn't get buffer immediately, returning image images. "
-                                            + "acquired size "
+                            Log.v(
+                                    TAG,
+                                    "Couldn't queue buffer, returning image. num images acquired: "
                                             + mImageMap.size());
                         }
                         returnImage(ts);
@@ -350,9 +346,9 @@ public class CameraController {
     private UserPrefs mUserPrefs;
     VendorCameraPrefs mRroCameraInfo;
 
-    public CameraController(Context context, WeakReference<DeviceAsWebcamFgService> serviceWeak) {
+    public CameraController(Context context, WebcamControllerImpl webcamController) {
         mContext = context;
-        mServiceWeak = serviceWeak;
+        mWebcamController = webcamController;
         if (mContext == null) {
             Log.e(TAG, "Application context is null!, something is going to go wrong");
             return;
@@ -672,14 +668,20 @@ public class CameraController {
         return null;
     }
 
-    public void setWebcamStreamConfig(boolean mjpeg, int width, int height, int fps) {
+    public void setWebcamStreamConfig(int width, int height, int fps) {
         if (VERBOSE) {
-            Log.v(TAG, "Set stream config service : mjpeg  ? " + mjpeg + " width" + width +
-                    " height " + height + " fps " + fps);
+            Log.v(
+                    TAG,
+                    "Set stream config service : width "
+                            + width
+                            + " height "
+                            + height
+                            + " fps "
+                            + fps);
         }
         synchronized (mSerializationLock) {
             long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_VIDEO_ENCODE;
-            mStreamConfigs = new StreamConfigs(mjpeg, width, height, fps);
+            mStreamConfigs = new StreamConfigs(width, height, fps);
             synchronized (mImgReaderLock) {
                 if (mImgReader != null) {
                     mImgReader.close();
@@ -706,17 +708,18 @@ public class CameraController {
     private void handleOnCameraAvailable() {
         // Offload to mServiceEventsExecutor since any camera operations which require
         // mSerializationLock should be performed on mServiceEventsExecutor thread.
-        mServiceEventsExecutor.execute(() -> {
-            synchronized (mSerializationLock) {
-                if (mCameraDevice != null) {
-                    return;
-                }
-                stopShowingCameraUnavailableLogo();
-                setWebcamStreamConfig(mStreamConfigs.isMjpeg, mStreamConfigs.width,
-                        mStreamConfigs.height, mStreamConfigs.fps);
-                startWebcamStreamingNoOffload();
-            }
-        });
+        mServiceEventsExecutor.execute(
+                () -> {
+                    synchronized (mSerializationLock) {
+                        if (mCameraDevice != null) {
+                            return;
+                        }
+                        stopShowingCameraUnavailableLogo();
+                        setWebcamStreamConfig(
+                                mStreamConfigs.mWidth, mStreamConfigs.mHeight, mStreamConfigs.mFps);
+                        startWebcamStreamingNoOffload();
+                    }
+                });
     }
 
     /**
@@ -747,18 +750,18 @@ public class CameraController {
      */
     private void startShowingCameraUnavailableLogoNoOffload() {
         synchronized (mSerializationLock) {
-            setupBitmaps(mStreamConfigs.width, mStreamConfigs.height);
+            setupBitmaps(mStreamConfigs.mWidth, mStreamConfigs.mHeight);
             long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN;
             synchronized (mImgReaderLock) {
                 if (mImgReader != null) {
                     mImgReader.close();
                 }
-                mImgReader = new ImageReader.Builder(
-                         mStreamConfigs.width, mStreamConfigs.height)
-                        .setMaxImages(MAX_BUFFERS)
-                        .setDefaultHardwareBufferFormat(HardwareBuffer.RGBA_8888)
-                        .setUsage(usage)
-                        .build();
+                mImgReader =
+                        new ImageReader.Builder(mStreamConfigs.mWidth, mStreamConfigs.mHeight)
+                                .setMaxImages(MAX_BUFFERS)
+                                .setDefaultHardwareBufferFormat(HardwareBuffer.RGBA_8888)
+                                .setUsage(usage)
+                                .build();
 
                 mImgReader.setOnImageAvailableListener(mOnImageAvailableListener,
                         mImageReaderHandler);
@@ -766,15 +769,15 @@ public class CameraController {
             mImageWriter = ImageWriter.newInstance(mImgReader.getSurface(), MAX_BUFFERS);
             // In effect, the webcam stream has started
             mImageWriterEventsExecutor = Executors.newScheduledThreadPool(1);
-            mImageWriterEventsExecutor.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    Image img = mImageWriter.dequeueInputImage();
-                    // Fill in image
-                    fillImageWithCameraAccessBlockedLogo(img);
-                    mImageWriter.queueInputImage(img);
-                }
-            }, /*initialDelay*/0, /*fps period ms*/1000 / mStreamConfigs.fps,
+            mImageWriterEventsExecutor.scheduleAtFixedRate(
+                    () -> {
+                        Image img = mImageWriter.dequeueInputImage();
+                        // Fill in image
+                        fillImageWithCameraAccessBlockedLogo(img);
+                        mImageWriter.queueInputImage(img);
+                    },
+                    /* initialDelay= */ 0,
+                    /* period= */ 1000 / mStreamConfigs.mFps,
                     TimeUnit.MILLISECONDS);
         }
     }
@@ -845,7 +848,7 @@ public class CameraController {
 
         int currentFps = 30;
         if (mStreamConfigs != null) {
-            currentFps = mStreamConfigs.fps;
+            currentFps = mStreamConfigs.mFps;
         }
         Range<Integer> fpsRange;
         if (currentFps != 0) {
@@ -932,8 +935,9 @@ public class CameraController {
         // Webcam stream - YUV should be <= 1440p
         // Preview stream should be <= PREVIEW - which is already guaranteed by
         // getSuitablePreviewSize()
-        if (mWebcamOutputConfiguration != null && mStreamConfigs != null &&
-                (mStreamConfigs.width * mStreamConfigs.height) > (1920 * 1440)) {
+        if (mWebcamOutputConfiguration != null
+                && mStreamConfigs != null
+                && (mStreamConfigs.mWidth * mStreamConfigs.mHeight) > (1920 * 1440)) {
             return false;
         }
         return true;
@@ -1692,10 +1696,8 @@ public class CameraController {
                 VendorCameraPrefs.getVendorCameraPrefsFromJson(mContext);
     }
 
-    /**
-     * An interface to monitor the rotation changes.
-     */
-    interface RotationUpdateListener {
+    /** An interface to monitor the rotation changes. */
+    public interface RotationUpdateListener {
         /**
          * Called when the physical rotation of the device changes to cause the corresponding
          * rotation degrees value is changed.
