@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam;
+package com.android.deviceaswebcam;
 
 import android.annotation.NonNull;
 import android.app.Notification;
@@ -32,8 +32,9 @@ import android.util.Size;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import com.android.DeviceAsWebcam.annotations.UsedByNative;
-import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
+import com.android.DeviceAsWebcam.R;
+import com.android.deviceaswebcam.annotations.UsedByNative;
+import com.android.deviceaswebcam.utils.IgnoredV4L2Nodes;
 
 import java.util.Objects;
 

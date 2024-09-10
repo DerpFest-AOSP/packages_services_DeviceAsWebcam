@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam.view
+package com.android.deviceaswebcam.view
 
 import android.app.AlertDialog
 import android.app.Dialog
@@ -29,10 +29,10 @@ import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.android.DeviceAsWebcam.CameraCategory
-import com.android.DeviceAsWebcam.CameraId
-import com.android.DeviceAsWebcam.CameraInfo
 import com.android.DeviceAsWebcam.R
+import com.android.deviceaswebcam.CameraCategory
+import com.android.deviceaswebcam.CameraId
+import com.android.deviceaswebcam.CameraInfo
 import java.util.function.Consumer
 
 /**

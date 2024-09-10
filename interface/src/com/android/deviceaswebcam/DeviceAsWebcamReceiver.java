@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam;
+package com.android.deviceaswebcam;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,7 +23,7 @@ import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
+import com.android.deviceaswebcam.utils.IgnoredV4L2Nodes;
 
 /**
  * Base abstract class that receives USB broadcasts from system server and starts the webcam

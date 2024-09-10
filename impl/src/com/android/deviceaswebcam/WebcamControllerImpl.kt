@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam
+package com.android.deviceaswebcam
 
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.util.Size
-import com.android.DeviceAsWebcam.CameraController.RotationUpdateListener
+import com.android.deviceaswebcam.CameraController.RotationUpdateListener
 import java.util.function.Consumer
 
 class WebcamControllerImpl(context: Context) : WebcamController() {

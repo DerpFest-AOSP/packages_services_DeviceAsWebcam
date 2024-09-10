@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam;
+package com.android.deviceaswebcam;
 
 import android.content.Context;
 import android.util.ArrayMap;
@@ -24,6 +24,8 @@ import android.util.Range;
 
 import androidx.annotation.Nullable;
 import androidx.core.util.Preconditions;
+
+import com.android.DeviceAsWebcam.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;

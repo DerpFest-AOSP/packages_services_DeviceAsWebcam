@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam.annotations;
+package com.android.deviceaswebcam.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
