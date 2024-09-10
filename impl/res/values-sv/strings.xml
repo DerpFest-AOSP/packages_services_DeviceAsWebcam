@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Byt till främre kameran"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Inaktivera hög kvalitet"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Aktivera hög kvalitet"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Förgrundstjänst"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Webbkamera"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Webbkamera"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Tryck för att förhandsgranska och konfigurera webbkamerans utdata"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Läget för hög kvalitet"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Med läget för hög kvalitet inaktiveras strömoptimeringar för att förbättra webbkamerans kvalitet. Det här läget kan dra mycket ström, vilket kan göra enheten varm."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"VARNING!"</u></b>" Långvarig användning i höga temperaturer kan påverka enhetens batterihälsa negativt på lång sikt."</string>

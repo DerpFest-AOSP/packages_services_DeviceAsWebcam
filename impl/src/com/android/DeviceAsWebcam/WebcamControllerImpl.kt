@@ -18,18 +18,14 @@ package com.android.DeviceAsWebcam
 
 import android.content.Context
 import android.graphics.SurfaceTexture
-import android.hardware.HardwareBuffer
-import android.util.Log
 import android.util.Size
 import com.android.DeviceAsWebcam.CameraController.RotationUpdateListener
-import java.lang.ref.WeakReference
 import java.util.function.Consumer
 
 class WebcamControllerImpl(context: Context) : WebcamController() {
     private val mLock = Object()
 
     private val mCameraController = CameraController(context, /* webcamController= */ this)
-    private var mServiceRef: WeakReference<DeviceAsWebcamFgService> = WeakReference(null)
     private var mDestroyActivityCallback: Runnable? = null
 
     override fun setStreamConfig(size: Size, frameRate: Int) {
@@ -52,26 +48,6 @@ class WebcamControllerImpl(context: Context) : WebcamController() {
 
     override fun onDestroy() {
         synchronized(mLock) { mDestroyActivityCallback?.run() }
-    }
-
-    override fun queueImageToHost(
-        image: HardwareBuffer,
-        token: Long,
-        rotate180Degrees: Boolean
-    ): Boolean {
-        val service = mServiceRef.get()
-        if (service == null) {
-            Log.e(TAG, "queueImageToHost called but service has already been garbage collected?")
-            return false
-        }
-
-        return service.nativeEncodeImage(image, token, if (rotate180Degrees) 180 else 0) == 0
-    }
-
-    fun registerServiceInstance(serviceRef: WeakReference<DeviceAsWebcamFgService>) {
-        // TODO(arakesh): Move to base WebcamController class when DeviceAsWebcamFgService
-        //                splits.
-        mServiceRef = serviceRef
     }
 
     /**

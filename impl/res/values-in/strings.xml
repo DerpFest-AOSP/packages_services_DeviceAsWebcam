@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Alihkan ke kamera depan"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Menonaktifkan Kualitas Tinggi"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Mengaktifkan Kualitas Tinggi"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Layanan Latar Depan"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Webcam"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Webcam"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Ketuk untuk melihat pratinjau dan mengonfigurasi output webcam"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Mode Kualitas Tinggi"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Mode Kualitas Tinggi menonaktifkan pengoptimalan daya guna meningkatkan kualitas webcam. Mode ini dapat menyebabkan penggunaan daya yang signifikan sehingga membuat perangkat menjadi panas."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"PERINGATAN:"</u></b>" Penggunaan berkepanjangan pada suhu tinggi dapat menyebabkan dampak buruk pada kesehatan baterai perangkat ini dalam jangka panjang."</string>

@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"ફ્રન્ટ કૅમેરા પર સ્વિચ કરો"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"ઉચ્ચ ક્વૉલિટીની સુવિધા બંધ કરો"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"ઉચ્ચ ક્વૉલિટીની સુવિધા ચાલુ કરો"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"ફૉરગ્રાઉન્ડ સેવા"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"વેબકૅમ"</string>
-    <string name="notif_title" msgid="4116154871333996356">"વેબકૅમ"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"વેબકૅમના આઉટપુટનો પ્રીવ્યૂ કરવા અને તેના કન્ફિગ્યુરેશન માટે ટૅપ કરો"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"ઉચ્ચ ક્વૉલિટી મોડ"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"ઉચ્ચ ક્વૉલિટી મોડ વેબકૅમ ક્વૉલિટી સુધારવા માટે પાવર ઑપ્ટિમાઇઝેશનને બંધ કરે છે. આ મોડનો ઉપયોગ કરવાથી નોંધપાત્ર પ્રમાણમાં પાવર ખેંચાઈ શકે છે જેનાથી ડિવાઇસ ગરમ થઈ શકે છે."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"ચેતવણી:"</u></b>" ઊંચા તાપમાને લાંબા સમય સુધી ઉપયોગ આ ડિવાઇસની બૅટરીની ક્ષમતા પર પ્રતિકૂળ અસર કરી શકે છે."</string>

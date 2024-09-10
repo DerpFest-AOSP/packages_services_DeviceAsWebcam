@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"മുൻ ക്യാമറയിലേക്ക് മാറുക"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"\'ഉയർന്ന നിലവാരം\' ബട്ടൺ ഓഫാക്കുക"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"\'ഉയർന്ന നിലവാരം\' ബട്ടൺ ഓണാക്കുക"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"ഫോർഗ്രൗണ്ട് സേവനം"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"വെബ്ക്യാം"</string>
-    <string name="notif_title" msgid="4116154871333996356">"വെബ്ക്യാം"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"വെബ്ക്യാം ഔട്ട്‌പുട്ട് പ്രിവ്യൂ ചെയ്യാനും കോൺഫിഗർ ചെയ്യാനും ടാപ്പ് ചെയ്യുക"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"ഉയർന്ന നിലവാരം മോഡ്"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"വെബ്ക്യാം നിലവാരം മെച്ചപ്പെടുത്താൻ, ഉയർന്ന നിലവാരം മോഡ്, പവർ ഒപ്റ്റിമൈസേഷൻ പ്രവർത്തനരഹിതമാക്കും. ഈ മോഡ് ഉപയോഗിക്കുന്നത്, ഉപകരണം ചൂടാകാൻ ഇടവരുത്തുന്ന പവർ ഡ്രോയ്ക്ക് കാരണമായേക്കാം."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"മുന്നറിയിപ്പ്:"</u></b>" ഉയർന്ന താപനിലയിൽ ദീർഘനേരത്തേക്ക് ഉപയോഗിക്കുന്നത്, ഈ ഉപകരണത്തിന്റെ ദീർഘകാല ബാറ്ററി ക്ഷമതയെ പ്രതികൂലമായി ബാധിച്ചേക്കാം."</string>

@@ -131,4 +131,6 @@ The details of the overridable files are as follows:
   ]
   ```
 
-  Note that wildcard patterns are _not_ supported in `ignored_v4l2_nodes.json`.
+  **Note:**
+  - `ignored_v4l2_nodes.json` is pulled in via `libDeviceAsWebcam`.
+  - Wildcard patterns are _not_ supported in `ignored_v4l2_nodes.json`.
