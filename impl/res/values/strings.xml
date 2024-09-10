@@ -31,11 +31,6 @@
     <!-- Accessibility description for the toggle high quality button -->
     <string name="toggle_high_quality_description_off">Switch High Quality off</string>
     <string name="toggle_high_quality_description_on">Switch High Quality on</string>
-    <!-- Notification  -->
-    <string name="notif_channel_name">Foreground Service</string>
-    <string name="notif_ticker">Webcam</string>
-    <string name="notif_title">Webcam</string>
-    <string name="notif_desc">Tap to preview and configure webcam output</string>
     <!-- High Quality warning dialog -->
     <string name="hq_warning_dialog_title">High Quality Mode</string>
     <string name="hq_warning_dialog_content_1">High Quality Mode disables power optimizations to improve webcam quality. Using this mode may cause significant power draw which can heat up the device.</string>

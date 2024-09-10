@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Įjungti priekinį fotoaparatą"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Išjungti aukštos kokybės režimą"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Įjungti aukštos kokybės režimą"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Priekinio plano paslauga"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Žiniatinklio kamera"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Žiniatinklio kamera"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Palieskite, kad galėtumėte peržiūrėti ir konfigūruoti žiniatinklio kameros išvestį"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Aukštos kokybės režimas"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Aukštos kokybės režimu išjungiamas energijos optimizavimas, siekiant pagerinti žiniatinklio kameros kokybę. Šiuo režimu gali būti naudojama daug energijos, todėl įrenginys gali įkaisti."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"PERSPĖJIMAS:"</u></b>" ilgai naudojant esant aukštai temperatūrai tai gali neigiamai paveikti šio įrenginio akumuliatoriaus būseną per ilgą laiką."</string>

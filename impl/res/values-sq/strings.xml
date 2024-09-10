@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Kalo te kamera e përparme"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Çaktivizo \"Cilësinë e lartë\""</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Aktivizo \"Cilësinë e lartë\""</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Shërbimi në plan të parë"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Uebkamera"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Uebkamera"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Trokit për të parë versionin paraprak dhe për të konfiguruar daljen e uebkamerës"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Modaliteti i cilësisë së lartë"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"\"Modaliteti i cilësisë së lartë\" çaktivizon optimizimet e energjisë për të përmirësuar cilësinë e uebkamerës. Përdorimi i këtij modaliteti mund të shkaktojë konsum të lartë të energjisë, çka mund të nxehë pajisjen.‏"</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"PARALAJMËRIM:"</u></b>" Përdorimi i zgjatur në temperatura të larta mund të ketë një efekt negativ në gjendjen afatgjatë të baterisë së kësaj pajisjeje."</string>

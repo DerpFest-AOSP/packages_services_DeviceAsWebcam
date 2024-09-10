@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"切换到前置摄像头"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"关闭“高画质”功能"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"开启“高画质”功能"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"前台服务"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"摄像头"</string>
-    <string name="notif_title" msgid="4116154871333996356">"摄像头"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"点按即可预览和配置摄像头输出"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"高画质模式"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"为了提升摄像头画质，高画质模式会停用电源优化功能。使用此模式可能会大幅消耗电量，进而导致设备发热。"</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"警告："</u></b>"长时间在高温下使用可能会对此设备的长期电池健康度造成不利影响。"</string>

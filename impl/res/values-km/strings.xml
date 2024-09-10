@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"ប្ដូរទៅកាមេរ៉ា​ខាងមុខ"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"បិទគុណភាពខ្ពស់"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"បើកគុណភាពខ្ពស់"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"សេវាកម្ម​នៅ​ផ្ទៃ​ខាង​មុខ"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"កាមេរ៉ាបណ្ដាញ"</string>
-    <string name="notif_title" msgid="4116154871333996356">"កាមេរ៉ាបណ្ដាញ"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"ប៉ះដើម្បីមើលសាកល្បង និងកំណត់រចនាសម្ព័ន្ធលទ្ធផលរបស់កាមេរ៉ាបណ្ដាញ"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"មុខងារគុណភាពខ្ពស់"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"មុខងារគុណភាពខ្ពស់បិទការបង្កើនប្រសិទ្ធភាពថាមពល ដើម្បីកែលម្អគុណភាពកាមេរ៉ា​បណ្ដាញ។ ការប្រើមុខងារនេះអាចបណ្ដាលឱ្យមានការប្រើថាមពលអស់ច្រើន ដែលអាចធ្វើឱ្យឧបករណ៍ឡើងក្ដៅ។"</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"សូមប្រុងប្រយ័ត្ន៖"</u></b>" ការប្រើប្រាស់រយៈពេលយូរនៅសីតុណ្ហភាពខ្ពស់អាចមានផលអវិជ្ជមានចំពោះគុណភាព​ថ្មរបស់ឧបករណ៍នេះក្នុងរយៈពេលវែង។"</string>

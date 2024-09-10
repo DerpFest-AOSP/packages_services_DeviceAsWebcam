@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"সামনের ক্যামেরাতে পাল্টান"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"হাই কোয়ালিটি মোড বন্ধ করুন"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"হাই কোয়ালিটি মোড চালু করুন"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"ফোরগ্রাউন্ড পরিষেবা"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"ওয়েবক্যাম"</string>
-    <string name="notif_title" msgid="4116154871333996356">"ওয়েবক্যাম"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"ওয়েবক্যাম আউটপুট প্রিভিউ ও কনফিগার করতে, ট্যাপ করুন"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"হাই কোয়ালিটি মোড"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"ওয়েবক্যামের কোয়ালিটি উন্নত করতে খুব ভাল কোয়ালিটির মোড পাওয়ার অপ্টিমাইজেশন বন্ধ করে দিয়েছে। এই মোড ব্যবহার করলে পাওয়ার সাপ্লাই বাড়তে পারে এবং ডিভাইস গরম হতে পারে।"</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"সতর্কতা:"</u></b>"আপনার ডিভাইস যদি অনেক সময় ধরে বেশি তাপমাত্রায় ব্যবহার করা হয়, তাহলে ডিভাইসের ব্যাটারির পারফর্ম্যান্স প্রভাবিত হতে পারে।"</string>

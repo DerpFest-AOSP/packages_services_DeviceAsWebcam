@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"अगाडिको क्यामेरा प्रयोग गर्नुहोस्"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"\"उच्च गुणस्तर\" मोड अफ गर्नुहोस्"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"\"उच्च गुणस्तर\" मोड अन गर्नुहोस्"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"फोरग्रान्डमा चलिरहेको सेवा"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"वेबक्याम"</string>
-    <string name="notif_title" msgid="4116154871333996356">"वेबक्याम"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"वेबक्यामको आटपुट प्रिभ्यू गर्न र कन्फिगर गर्न ट्याप गर्नुहोस्"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"उच्च गुणस्तर मोड"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"उच्च गुणस्तर मोडले वेबक्यामको गुणस्तर सुधार गर्न पावर अप्टिमाइजेसन अफ गर्छ। यो मोड प्रयोग गर्दा बिजुली निकै खपत हुने हुनाले डिभाइस तात्न सक्छ।"</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"चेतावनी:"</u></b>" लामो समयसम्म उच्च तापक्रममा प्रयोग गर्दा यो डिभाइसको ब्याट्रीको दीर्घकालीन अवस्थामा प्रतिकूल प्रभाव पर्न सक्छ।"</string>

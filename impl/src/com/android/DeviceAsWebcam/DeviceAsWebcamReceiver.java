@@ -54,7 +54,7 @@ public class DeviceAsWebcamReceiver extends BroadcastReceiver {
                 }
                 return;
             }
-            Intent fgIntent = new Intent(context, DeviceAsWebcamFgService.class);
+            Intent fgIntent = new Intent(context, DeviceAsWebcamFgServiceImpl.class);
             context.startForegroundService(fgIntent);
             if (VERBOSE) {
                 Log.v(TAG, "started foreground service");
