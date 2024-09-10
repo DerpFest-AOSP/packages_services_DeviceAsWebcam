@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam.utils;
+package com.android.deviceaswebcam.utils;
 
 import android.annotation.Nullable;
 import android.content.Context;

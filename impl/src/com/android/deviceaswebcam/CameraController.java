@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam;
+package com.android.deviceaswebcam;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -54,8 +54,9 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.DeviceAsWebcam.utils.UserPrefs;
+import com.android.DeviceAsWebcam.R;
 import com.android.deviceaswebcam.flags.Flags;
+import com.android.deviceaswebcam.utils.UserPrefs;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
