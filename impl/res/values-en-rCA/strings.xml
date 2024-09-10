@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Switch to front camera"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Switch High Quality off"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Switch High Quality on"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Foreground Service"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Webcam"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Webcam"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Tap to preview and configure webcam output"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"High Quality Mode"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"High Quality Mode disables power optimizations to improve webcam quality. Using this mode may cause significant power draw which can heat up the device."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"WARNING:"</u></b>" Prolonged usage at high temperatures may have an adverse effect on the long term battery health of this device."</string>

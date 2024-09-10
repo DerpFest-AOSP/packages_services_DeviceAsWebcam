@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Zu Frontkamera wechseln"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Hohe Qualität deaktivieren"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Hohe Qualität aktivieren"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Dienst im Vordergrund"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Webcam"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Webcam"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Tippen, um eine Vorschau aufzurufen und die Webcam-Ausgabe zu konfigurieren"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Modus „Hohe Qualität“"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Durch den Modus für hohe Qualität werden Optimierungen des Stromverbrauchs deaktiviert, um die Webcamqualität zu verbessern. Der Modus kann deshalb zu erhöhtem Stromverbrauch und dadurch zu einer stärkeren Erwärmung des Geräts führen."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"WARNUNG"</u></b>": Eine längere Nutzung bei erhöhten Temperaturen kann sich negativ auf den langfristigen Akkuzustand dieses Geräts auswirken."</string>

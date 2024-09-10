@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Ön kameraya geç"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Yüksek kaliteye geçme düğmesi kapalı"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Yüksek kaliteye geçme düğmesi açık"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Ön Plan Hizmeti"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Web kamerası"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Web kamerası"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Web kamerası çıkışını önizlemek ve yapılandırmak için dokunun"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Yüksek Kalite Modu"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Yüksek Kalite Modu, güç optimizasyonlarını devre dışı bırakarak web kamerası kalitesini artırır. Bu modu kullandığınızda önemli miktarda güç tüketimi olduğu için cihazınız ısınabilir."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"UYARI:"</u></b>" Yüksek sıcaklıklarda uzun süre kullanırsanız bu cihazın pil sağlığı uzun vadede olumsuz etkilenebilir."</string>

@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"সন্মুখৰ কেমেৰালৈ সলনি কৰক"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"উচ্চ গুণগত মান অফ কৰক"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"উচ্চ গুণগত মান অন কৰক"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"অগ্ৰভাগৰ সেৱা"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"ৱেবকেম"</string>
-    <string name="notif_title" msgid="4116154871333996356">"ৱেবকেম"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"ৱেবকেমৰ আউটপুট পূৰ্বদৰ্শন আৰু কনফিগাৰ কৰিবলে টিপক"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"উচ্চ গুণগত মানৰ ম’ড"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"উচ্চ গুণগত মানৰ ম’ডে ৱেবকেমৰ মান উন্নত কৰিবলৈ পাৱাৰ অপ্টিমাইজেশ্বন অক্ষম কৰে। এই ম’ড ব্যৱহাৰ কৰাৰ ফলত উল্লেখযোগ্যভাৱে পাৱাৰ আহৰণ কৰা হ’ব পাৰে যি ডিভাইচটো গৰম কৰি তুলিব পাৰে।"</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"সকীয়নি:"</u></b>" উচ্চ তাপমানত দীঘলীয়া সময় ধৰি একেৰাহে ব্যৱহাৰ কৰিলে এই ডিভাইচটোৰ দীৰ্ঘম্যাদী বেটাৰীৰ স্বাস্থ্যৰ ওপৰত বিৰূপ প্ৰভাৱ পৰিব পাৰে।"</string>
