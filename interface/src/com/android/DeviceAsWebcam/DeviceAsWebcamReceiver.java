@@ -25,7 +25,11 @@ import android.util.Log;
 
 import com.android.DeviceAsWebcam.utils.IgnoredV4L2Nodes;
 
-public class DeviceAsWebcamReceiver extends BroadcastReceiver {
+/**
+ * Base abstract class that receives USB broadcasts from system server and starts the webcam
+ * foreground service when needed.
+ */
+public abstract class DeviceAsWebcamReceiver extends BroadcastReceiver {
     private static final String TAG = DeviceAsWebcamReceiver.class.getSimpleName();
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
 
@@ -34,10 +38,9 @@ public class DeviceAsWebcamReceiver extends BroadcastReceiver {
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public final void onReceive(Context context, Intent intent) {
         final String action = intent.getAction();
         Bundle extras = intent.getExtras();
-        boolean connected = extras.getBoolean(UsbManager.USB_CONNECTED);
         boolean uvcSelected = extras.getBoolean(UsbManager.USB_FUNCTION_UVC);
         if (VERBOSE) {
             Log.v(TAG, "Got broadcast with extras" + extras);
@@ -54,11 +57,19 @@ public class DeviceAsWebcamReceiver extends BroadcastReceiver {
                 }
                 return;
             }
-            Intent fgIntent = new Intent(context, DeviceAsWebcamFgServiceImpl.class);
+            Class<? extends DeviceAsWebcamFgService> klass = getForegroundServiceClass();
+            Intent fgIntent = new Intent(context, klass);
             context.startForegroundService(fgIntent);
             if (VERBOSE) {
                 Log.v(TAG, "started foreground service");
             }
         }
     }
+
+    /**
+     * Return the concrete class for the foreground service.
+     *
+     * @return class that has the concrete implementation of {@link DeviceAsWebcamFgService}
+     */
+    protected abstract Class<? extends DeviceAsWebcamFgService> getForegroundServiceClass();
 }
