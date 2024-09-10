@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam;
+package com.android.deviceaswebcam;
 
 import android.content.Context;
 import android.util.Range;

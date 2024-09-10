@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam.view;
+package com.android.deviceaswebcam.view;
 
-import static com.android.DeviceAsWebcam.view.ZoomController.convertZoomRatioToString;
+import static com.android.deviceaswebcam.view.ZoomController.convertZoomRatioToString;
 
 import android.content.Context;
 import android.content.res.Resources;

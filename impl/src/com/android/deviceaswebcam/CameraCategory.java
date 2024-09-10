@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.DeviceAsWebcam;
+package com.android.deviceaswebcam;
 
 /**
  * Defines the possible camera category.
