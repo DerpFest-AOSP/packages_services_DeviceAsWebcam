@@ -5,7 +5,6 @@
      android:sharedUserId="android.uid.system"
      package="com.android.DeviceAsWebcam">
 
-    <uses-feature android:name="android.hardware.usb.host"/>
     <uses-feature android:name="android.hardware.camera.any" android:required="true"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -13,7 +12,7 @@
 
     <application
          android:label="@string/app_label">
-        <receiver android:name=".DeviceAsWebcamReceiver"
+        <receiver android:name="com.android.deviceaswebcam.DeviceAsWebcamReceiverImpl"
              android:exported="true"
              android:singleUser="true">
             <intent-filter>
@@ -21,7 +20,7 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name=".DeviceAsWebcamPreview"
+        <activity android:name="com.android.deviceaswebcam.DeviceAsWebcamPreview"
             android:excludeFromRecents="true"
             android:screenOrientation="user"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|smallestScreenSize"
@@ -32,7 +31,7 @@
         </activity>
 
         <service
-            android:name=".DeviceAsWebcamFgService"
+            android:name="com.android.deviceaswebcam.DeviceAsWebcamFgServiceImpl"
             android:foregroundServiceType="camera"
             android:singleUser="true"/>
     </application>

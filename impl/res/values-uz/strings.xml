@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Old kameraga almashish"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Yuqori sifatda suratga olishni oʻchirish"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Yuqori sifatda suratga olishni yoqish"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Faol xizmat"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Veb-kamera"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Veb-kamera"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Veb-kamera tasviriga razm solish va sozlash uchun bosing"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Yuqori sifat rejimi"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Yuqori sifat rejimi veb-kamera tasvirini yaxshilash uchun quvvatni optimallashtirishni oʻchiradi. Bu rejim sezilarli energiya sarfiga sabab boʻlishi va qurilma qizib ketishi mumkin."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"OGOHLANTIRISH:"</u></b>" Yuqori haroratlarda uzoq muddat foydalanish qurilma batareya holatiga salbiy taʼsir koʻrsatishi mumkin."</string>

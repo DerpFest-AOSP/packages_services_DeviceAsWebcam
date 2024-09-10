@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"Skakel oor na voorste kamera"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"Skakel hoë gehalte af"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"Skakel hoë gehalte aan"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"Voorgronddiens"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Webkamera"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Webkamera"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Tik om te voorbeskou en webkamera-uitvoer op te stel"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"Hoëgehaltemodus"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"Hoëgehaltemodus deaktiveer kragoptimerings om gehalte van die webkamera te verbeter. Die gebruik van hierdie modus kan veroorsaak dat beduidende krag getrek word wat die toestel kan verhit."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"WAARSKUWING:"</u></b>" Langdurige gebruik teen hoë temperature kan \'n nadelige uitwerking hê op die langtermyn batterygesondheid van hierdie toestel."</string>

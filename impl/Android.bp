@@ -24,9 +24,6 @@ android_app {
     platform_apis: true,
     certificate: "platform",
     privileged: true,
-    optimize: {
-        proguard_flags_files: ["proguard.flags"],
-    },
     jni_libs: [
         "libjni_deviceAsWebcam",
     ],

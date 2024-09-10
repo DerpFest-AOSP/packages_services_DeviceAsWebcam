@@ -25,10 +25,6 @@
     <string name="toggle_camera_button_description_front" msgid="4369291922775514034">"ముందు వైపు కెమెరాకు మారండి"</string>
     <string name="toggle_high_quality_description_off" msgid="8625616955942340072">"హై క్వాలిటీ మోడ్‌ను ఆఫ్ చేయడానికి స్విచ్ చేయండి"</string>
     <string name="toggle_high_quality_description_on" msgid="2927400982468646409">"హై క్వాలిటీ మోడ్‌ను ఆన్ చేయడానికి స్విచ్ చేయండి"</string>
-    <string name="notif_channel_name" msgid="1795387228422610848">"ఫోర్‌గ్రౌండ్ సర్వీస్"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"వెబ్‌క్యామ్"</string>
-    <string name="notif_title" msgid="4116154871333996356">"వెబ్‌క్యామ్"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"వెబ్‌క్యామ్ అవుట్‌పుట్‌ను ప్రివ్యూ చేసి, కాన్ఫిగర్ చేయడానికి ట్యాప్ చేయండి"</string>
     <string name="hq_warning_dialog_title" msgid="2219475457173758785">"హై క్వాలిటీ మోడ్"</string>
     <string name="hq_warning_dialog_content_1" msgid="4522581741851657138">"వెబ్‌క్యామ్ క్వాలిటీని మెరుగుపరచడానికి హై క్వాలిటీ మోడ్, పవర్ ఆప్టిమైజేషన్‌లను డిజేబుల్ చేస్తుంది. ఈ మోడ్‌ను ఉపయోగించడం వలన విద్యుత్ సరఫరా పెరుగుతుంది, దీని కారణంగా పరికరం వేడెక్కవచ్చు."</string>
     <string name="hq_warning_dialog_content_2" msgid="3916465225973908142"><b><u>"హెచ్చరిక:"</u></b>" అధిక ఉష్ణోగ్రతల వద్ద ఎక్కువసేపు ఉపయోగించడం వల్ల ఈ పరికర బ్యాటరీ స్థితిపై ప్రతికూల ప్రభావం ఉండవచ్చు."</string>
