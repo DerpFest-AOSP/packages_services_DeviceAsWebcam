@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--  Copyright (C) 2024 The Android Open Source Project
+<!--  Copyright (C) 2023 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="notif_channel_name" msgid="1795387228422610848">"Serviciu în prim-plan"</string>
-    <string name="notif_ticker" msgid="3511834104983019828">"Cameră web"</string>
-    <string name="notif_title" msgid="4116154871333996356">"Cameră web"</string>
-    <string name="notif_desc" msgid="8111583880090370338">"Atinge pentru a previzualiza și a configura ieșirea camerei web"</string>
+    <string name="notif_channel_name" msgid="6360649882588343016">"Serviciu în prim-plan"</string>
+    <string name="notif_ticker" msgid="6915460822395652567">"Cameră web"</string>
+    <string name="notif_title" msgid="802425098359640082">"Cameră web"</string>
+    <string name="notif_desc" msgid="2524105328454274946">"Atinge pentru a previzualiza și a configura ieșirea camerei web"</string>
 </resources>
